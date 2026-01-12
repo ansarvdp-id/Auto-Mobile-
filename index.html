@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অটো মেকানিক গাইড</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- jsPDF for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Kalpurush', 'Arial', sans-serif; }
+        .app-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* Top Bar */
+        .top-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .profile-img-top { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+        
+        .hidden { display: none !important; }
+        .auth-box { padding: 30px; margin-top: 50px; }
+        
+        /* 16:9 Slider Aspect Ratio */
+        .slider-wrapper { position: relative; width: 100%; padding-top: 56.25%; /* 16:9 Aspect Ratio */ overflow: hidden; }
+        .slider-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .menu-item { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .menu-item:hover { background: #e3f2fd; transform: translateY(-3px); }
+        .menu-item i { font-size: 24px; color: #2c3e50; margin-bottom: 10px; }
+        
+        /* Loading Overlay */
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* Content Card Styles */
+        .content-card { background: #f8f9fa; border-left: 4px solid #2c3e50; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .mcq-option { cursor: pointer; padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; }
+        .mcq-option:hover { background: #e9ecef; }
+        .correct-ans { background-color: #d1e7dd !important; border-color: #badbcc; }
+        .wrong-ans { background-color: #f8d7da !important; border-color: #f5c2c7; }
+        
+        /* Ebook Page Style */
+        .ebook-page { width: 100%; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted small" id="loadingText">অপেক্ষা করুন...</p>
+    </div>
+
+    <!-- Top Navigation (Visible only when logged in) -->
+    <div id="navBar" class="top-bar hidden">
+        <span class="fw-bold"><i class="fas fa-wrench"></i> মেকানিক গাইড</span>
+        <div class="d-flex align-items-center gap-2">
+            <span id="navUserName" style="font-size: 12px;"></span>
+            <img src="https://via.placeholder.com/40" id="navProfileImg" class="profile-img-top" alt="Profile">
+            <button onclick="logout()" class="btn btn-sm btn-danger"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION SECTION -->
+    <div id="authSection">
+        <!-- Login Form -->
+        <div id="loginView" class="auth-box">
+            <div class="text-center mb-4">
+                <i class="fas fa-cogs fa-3x text-primary"></i>
+                <h3 class="mt-2">লগইন করুন</h3>
+            </div>
+            <div class="mb-3">
+                <label>ইমেইল</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="example@gmail.com">
+            </div>
+            <div class="mb-3">
+                <label>পাসওয়ার্ড</label>
+                <input type="password" id="loginPass" class="form-control" placeholder="******">
+            </div>
+            <button onclick="handleLogin()" class="btn btn-primary w-100">লগইন</button>
+            <p class="mt-3 text-center">একাউন্ট নেই? <a href="#" onclick="switchView('signup')">সাইন আপ করুন</a></p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signupView" class="auth-box hidden">
+            <h3 class="text-center mb-4">সাইন আপ</h3>
+            <div class="mb-2">
+                <label>পুরো নাম</label>
+                <input type="text" id="regName" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>জন্ম তারিখ</label>
+                <input type="date" id="regDob" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>লিঙ্গ</label>
+                <select id="regGender" class="form-control">
+                    <option value="Male">পুরুষ</option>
+                    <option value="Female">মহিলা</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>ইমেইল</label>
+                <input type="email" id="regEmail" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label>পাসওয়ার্ড</label>
+                <input type="password" id="regPass" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label>প্রোফাইল ছবি</label>
+                <input type="file" id="regImage" class="form-control" accept="image/*">
+            </div>
+            <button onclick="handleSignup()" class="btn btn-success w-100">রেজিস্ট্রেশন করুন</button>
+            <p class="mt-3 text-center">আগেই একাউন্ট আছে? <a href="#" onclick="switchView('login')">লগইন করুন</a></p>
+        </div>
+    </div>
+
+    <!-- VERIFICATION SECTION -->
+    <div id="verificationSection" class="auth-box hidden">
+        <div class="text-center">
+            <i class="fas fa-lock fa-3x text-warning mb-3"></i>
+            <h4>অ্যাক্টিভেশন প্রয়োজন</h4>
+            <p class="text-muted">আপনার অ্যাকাউন্টের মেয়াদ শেষ বা নতুন। অনুগ্রহ করে অ্যাক্টিভ কী (Active Key) দিন।</p>
+            <input type="text" id="licenseKeyInput" class="form-control mb-3 text-center" placeholder="Enter Activation Key">
+            <button onclick="verifyKey()" class="btn btn-warning w-100">ভেরিফাই করুন</button>
+            <p id="licenseMsg" class="mt-2 text-danger small"></p>
+        </div>
+    </div>
+
+    <!-- HOME DASHBOARD -->
+    <div id="homeSection" class="hidden">
+        
+        <!-- 16:9 Image Slider -->
+        <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner" id="sliderContainer">
+                <div class="carousel-item active">
+                    <div class="slider-wrapper">
+                        <img src="https://via.placeholder.com/640x360?text=Welcome" class="slider-img" alt="...">
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+        </div>
+
+        <!-- Expiry Status -->
+        <div class="text-center mt-2">
+            <span class="badge bg-info text-dark" id="expiryDisplay"></span>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid">
+            <div class="menu-item" onclick="openContentPage('question')">
+                <i class="fas fa-question-circle text-primary"></i>
+                <div>প্রশ্ন ও উত্তর</div>
+            </div>
+            <div class="menu-item" onclick="openContentPage('mcq')">
+                <i class="fas fa-list-check text-success"></i>
+                <div>MCQ</div>
+            </div>
+            <div class="menu-item" onclick="openContentPage('truefalse')">
+                <i class="fas fa-check-circle text-warning"></i>
+                <div>সত্য / মিথ্যা</div>
+            </div>
+            <div class="menu-item" onclick="openContentPage('translate')">
+                <i class="fas fa-language text-danger"></i>
+                <div>অনুবাদ (Translate)</div>
+            </div>
+            <!-- EBOOK OPTION -->
+            <div class="menu-item" onclick="openContentPage('ebook')">
+                <i class="fas fa-book-open text-info"></i>
+                <div>ই-বুক (Ebook)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEPARATE CONTENT PAGE -->
+    <div id="contentPage" class="hidden" style="background: white; min-height: 100vh;">
+        <div class="top-bar">
+            <button onclick="switchView('home')" class="btn btn-sm text-white"><i class="fas fa-arrow-left"></i> ফিরে যান</button>
+            <span id="pageTitle" class="fw-bold">Title</span>
+            <!-- PDF Download Button -->
+            <button id="pdfBtn" onclick="downloadEbookPdf()" class="btn btn-sm btn-warning hidden fw-bold">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+        </div>
+        <div class="p-3">
+            <div id="contentList" class="d-flex flex-column gap-3">
+                <!-- Dynamic items will appear here -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0",
+        authDomain: "ansar-vdp.firebaseapp.com",
+        projectId: "ansar-vdp",
+        storageBucket: "ansar-vdp.firebasestorage.app",
+        messagingSenderId: "934221161236",
+        appId: "1:934221161236:web:bd4797c63c4fd5418f9801"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUserData = null;
+    let currentEbookImages = []; 
+
+    // --- HELPER FUNCTIONS ---
+    window.showToast = (msg, type="info") => {
+        let bg = type === "error" ? "#dc3545" : "#198754";
+        Toastify({ text: msg, duration: 3000, style: { background: bg }, gravity: "bottom" }).showToast();
+    }
+
+    window.toggleLoading = (show, text="অপেক্ষা করুন...") => {
+        document.getElementById("loadingText").innerText = text;
+        document.getElementById("loading").classList.toggle("hidden", !show);
+    }
+
+    window.switchView = (view) => {
+        const views = ["loginView", "signupView", "homeSection", "verificationSection", "contentPage"];
+        views.forEach(v => {
+            const el = document.getElementById(v);
+            if(el) el.classList.add("hidden");
+        });
+
+        if(view === 'login' || view === 'signup') {
+            document.getElementById("authSection").classList.remove("hidden");
+            if(view === 'login') document.getElementById("loginView").classList.remove("hidden");
+            if(view === 'signup') document.getElementById("signupView").classList.remove("hidden");
+        } else {
+            document.getElementById("authSection").classList.add("hidden");
+            if(view === 'home') document.getElementById("homeSection").classList.remove("hidden");
+            if(view === 'verify') document.getElementById("verificationSection").classList.remove("hidden");
+            if(view === 'content') document.getElementById("contentPage").classList.remove("hidden");
+        }
+    }
+
+    // --- AUTHENTICATION & LAG FIX ---
+    async function uploadToCloudinary(file) {
+        if(file.size > 2097152) { 
+             throw new Error("ইমেজ সাইজ ২MB এর কম হতে হবে");
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "ml_default");
+        formData.append("cloud_name", "dntvrm1wn");
+
+        try {
+            let res = await fetch("https://api.cloudinary.com/v1_1/dntvrm1wn/image/upload", {
+                method: "POST", body: formData
+            });
+            let data = await res.json();
+            return data.secure_url;
+        } catch (error) {
+            throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে");
+        }
+    }
+
+    window.handleSignup = async () => {
+        const name = document.getElementById("regName").value;
+        const dob = document.getElementById("regDob").value;
+        const email = document.getElementById("regEmail").value;
+        const pass = document.getElementById("regPass").value;
+        const imgFile = document.getElementById("regImage").files[0];
+
+        if(!name || !email || !pass) return showToast("সব তথ্য পূরণ করুন", "error");
+
+        toggleLoading(true, "অ্যাকাউন্ট তৈরি হচ্ছে...");
+        try {
+            let imgUrl = "https://via.placeholder.com/150";
+            if(imgFile) {
+                toggleLoading(true, "ছবি আপলোড হচ্ছে...");
+                imgUrl = await uploadToCloudinary(imgFile);
+            }
+
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const user = userCredential.user;
+            await updateProfile(user, { displayName: name, photoURL: imgUrl });
+
+            const usersSnap = await getDocs(collection(db, "users"));
+            const isAdmin = usersSnap.empty; 
+
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid, fullName: name, dob: dob, email: email,
+                photoURL: imgUrl, isAdmin: isAdmin, licenseExpiry: null
+            });
+
+            showToast("অ্যাকাউন্ট তৈরি সফল!");
+        } catch (error) {
+            showToast(error.message, "error");
+            toggleLoading(false);
+        }
+    }
+
+    window.handleLogin = async () => {
+        const email = document.getElementById("loginEmail").value;
+        const pass = document.getElementById("loginPass").value;
+
+        if(!email || !pass) return showToast("ইমেইল ও পাসওয়ার্ড দিন", "error");
+
+        toggleLoading(true, "লগইন হচ্ছে...");
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (error) {
+            showToast("ভুল ইমেইল বা পাসওয়ার্ড", "error");
+            toggleLoading(false);
+        }
+    }
+
+    window.logout = () => {
+        signOut(auth).then(() => {
+            document.getElementById("navBar").classList.add("hidden");
+            currentUserData = null;
+            switchView('login');
+        });
+    }
+
+    // --- APP STATE OBSERVER ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            if(!currentUserData || currentUserData.uid !== user.uid) {
+                toggleLoading(true, "তথ্য লোড হচ্ছে...");
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if(userDoc.exists()) {
+                        currentUserData = userDoc.data();
+                        document.getElementById("navBar").classList.remove("hidden");
+                        document.getElementById("navUserName").innerText = currentUserData.fullName;
+                        document.getElementById("navProfileImg").src = currentUserData.photoURL || "https://via.placeholder.com/40";
+                        checkLicenseValidity();
+                    }
+                } catch(e) { console.error(e); toggleLoading(false); }
+            } else {
+                checkLicenseValidity();
+            }
+        } else {
+            switchView('login');
+            toggleLoading(false);
+        }
+    });
+
+    function checkLicenseValidity() {
+        if(!currentUserData.licenseExpiry) {
+            switchView('verify');
+            toggleLoading(false);
+            return;
+        }
+        const now = new Date();
+        const expiry = currentUserData.licenseExpiry.toDate();
+
+        if (now > expiry) {
+            document.getElementById("licenseMsg").innerText = "মেয়াদ শেষ: " + expiry.toLocaleDateString();
+            switchView('verify');
+        } else {
+            switchView('home');
+            loadSlider();
+            const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+            document.getElementById("expiryDisplay").innerText = `মেয়াদ আছে: ${daysLeft} দিন`;
+        }
+        toggleLoading(false);
+    }
+
+    // --- VERIFICATION ---
+    window.verifyKey = async () => {
+        const key = document.getElementById("licenseKeyInput").value.trim();
+        if(!key) return showToast("কি (Key) দিন", "error");
+        toggleLoading(true, "যাচাই করা হচ্ছে...");
+        
+        try {
+            const q = query(collection(db, "activation_keys"), where("key", "==", key), where("used", "==", false));
+            const querySnapshot = await getDocs(q);
+
+            if(querySnapshot.empty) {
+                showToast("ভুল বা ব্যবহৃত কি!", "error");
+                toggleLoading(false);
+                return;
+            }
+
+            let keyData = null;
+            let keyId = null;
+            querySnapshot.forEach(doc => { keyData = doc.data(); keyId = doc.id; });
+
+            const now = new Date();
+            const newExpiry = new Date(now.setDate(now.getDate() + keyData.days));
+
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { licenseExpiry: Timestamp.fromDate(newExpiry) });
+            await updateDoc(doc(db, "activation_keys", keyId), { used: true, usedBy: auth.currentUser.uid, usedAt: Timestamp.now() });
+
+            currentUserData.licenseExpiry = Timestamp.fromDate(newExpiry); 
+            showToast("সফলভাবে অ্যাক্টিভ হয়েছে!");
+            checkLicenseValidity();
+        } catch (e) { showToast("এরর হয়েছে", "error"); toggleLoading(false); }
+    }
+
+    // --- CONTENT SYSTEM ---
+    async function loadSlider() {
+        try {
+            const sliderDoc = await getDoc(doc(db, "app_settings", "slider"));
+            if(sliderDoc.exists()) {
+                const imgs = sliderDoc.data().images || [];
+                const container = document.getElementById("sliderContainer");
+                container.innerHTML = "";
+                imgs.forEach((url, index) => {
+                    container.innerHTML += `
+                        <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                             <div class="slider-wrapper">
+                                <img src="${url}" class="slider-img" alt="...">
+                            </div>
+                        </div>`;
+                });
+            }
+        } catch (e) { console.log("Slider error"); }
+    }
+
+    // ** UPDATED: openContentPage Function **
+    window.openContentPage = async (type) => {
+        switchView('content');
+        
+        document.getElementById("pdfBtn").classList.add("hidden");
+        currentEbookImages = []; 
+
+        const titles = {
+            'question': 'প্রশ্ন ও উত্তর',
+            'mcq': 'MCQ প্র্যাকটিস',
+            'truefalse': 'সত্য / মিথ্যা যাচাই',
+            'translate': 'ইঞ্জিন পার্টস অনুবাদ',
+            'ebook': 'মেকানিক ই-বুক'
+        };
+        document.getElementById("pageTitle").innerText = titles[type] || "Content";
+        
+        const listContainer = document.getElementById("contentList");
+        listContainer.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div><p class="mt-2 small">লোড হচ্ছে...</p></div>';
+
+        try {
+            const q = query(collection(db, "contents"), where("type", "==", type), orderBy("createdAt", "asc"));
+            const querySnapshot = await getDocs(q);
+
+            listContainer.innerHTML = ""; 
+
+            if(querySnapshot.empty) {
+                listContainer.innerHTML = '<div class="alert alert-warning text-center">কোন তথ্য পাওয়া যায়নি</div>';
+                return;
+            }
+
+            let serialCount = 0; 
+            const toBanglaNum = (n) => n.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+
+            if(type === 'ebook') {
+                document.getElementById("pdfBtn").classList.remove("hidden");
+            }
+
+            // Using array from snapshot to access index
+            const docs = querySnapshot.docs;
+
+            docs.forEach((doc, index) => {
+                const data = doc.data();
+                serialCount++;
+                const serialNum = toBanglaNum(serialCount); 
+
+                const div = document.createElement("div");
+                
+                // --- EBOOK LOGIC (UPDATED) ---
+                if (type === 'ebook') {
+                    if(data.image) {
+                        currentEbookImages.push(data.image); 
+                        
+                        let label = "";
+                        // Logic: 0 = Cover, 1 = Index, 2+ = Pages
+                        if(index === 0) {
+                            label = "কভার পেজ (Cover Page)";
+                        } else if (index === 1) {
+                            label = "সূচিপত্র (Index)";
+                        } else {
+                            // Page counting starts from 1 (which is index 2)
+                            label = `পৃষ্ঠা: ${toBanglaNum(index - 1)}`;
+                        }
+
+                        div.className = "mb-3 animate__animated animate__fadeIn";
+                        div.innerHTML = `
+                            <div class="position-relative">
+                                <img src="${data.image}" class="ebook-page" alt="${label}">
+                                <div class="text-center mt-1">
+                                    <span class="badge ${index < 2 ? 'bg-primary' : 'bg-secondary'} rounded-pill">${label}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } 
+                // --- OTHER CONTENT ---
+                else {
+                    div.className = "content-card animate__animated animate__fadeIn bg-white p-3 shadow-sm rounded mb-3 border";
+                    let imageHtml = '';
+                    if (data.image && data.image !== "") {
+                        imageHtml = `<div class="text-center my-2"><img src="${data.image}" class="img-fluid rounded border" style="max-height: 250px; width: auto; object-fit: contain;"></div>`;
+                    }
+
+                    if(type === 'question') {
+                        div.innerHTML = `
+                            <div>
+                                <h6 class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">
+                                    <span class="badge bg-primary me-2">${serialNum}</span> ${data.question}
+                                </h6>
+                                ${imageHtml}
+                                <div class="bg-light p-3 rounded border-start border-4 border-success mt-2">
+                                    <span class="badge bg-success mb-1" style="font-size: 10px;">উত্তর</span>
+                                    <p class="mb-0 text-dark" style="white-space: pre-wrap;">${data.answer}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else if(type === 'translate') {
+                         div.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted me-2 small">#${serialNum}</span>
+                                    <span class="fw-bold fs-5">${data.question}</span>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                                <span class="fs-5 text-success fw-bold">${data.answer}</span>
+                            </div>
+                        `;
+                    } else if(type === 'mcq' || type === 'truefalse') {
+                        let optionsHtml = '';
+                        if(data.options && data.options.length > 0) {
+                            data.options.forEach(opt => {
+                                optionsHtml += `<div class="mcq-option p-2 mb-2 border rounded" onclick="checkAnswer(this, '${opt}', '${data.correct}')">${opt}</div>`;
+                            });
+                        }
+                        div.innerHTML = `
+                            <div>
+                                <h6 class="fw-bold mb-3"><span class="badge bg-secondary me-2">${serialNum}</span> ${data.question}</h6>
+                                <div class="d-grid gap-1">${optionsHtml}</div>
+                            </div>
+                        `;
+                    }
+                }
+                listContainer.appendChild(div);
+            });
+
+        } catch (error) {
+            console.error(error);
+            listContainer.innerHTML = '<p class="text-center text-danger">ডাটা লোড করতে সমস্যা হয়েছে। ইন্টারনেট কানেকশন চেক করুন।</p>';
+        }
+    }
+
+    window.checkAnswer = (el, selected, correct) => {
+        if(selected === correct) {
+            el.classList.add("correct-ans");
+            el.innerHTML += ' <i class="fas fa-check float-end text-success"></i>';
+        } else {
+            el.classList.add("wrong-ans");
+            el.innerHTML += ' <i class="fas fa-times float-end text-danger"></i>';
+        }
+    }
+
+    // --- UPDATED: PDF GENERATION LOGIC ---
+    window.downloadEbookPdf = async () => {
+        if (currentEbookImages.length === 0) return showToast("কোন পেজ নেই", "error");
+
+        toggleLoading(true, "পিডিএফ তৈরি হচ্ছে... (একটু সময় দিন)");
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        
+        try {
+            const watermarkText = "© 2026 | Created by Md. Borhan Ali — Junior Developer";
+
+            for (let i = 0; i < currentEbookImages.length; i++) {
+                const imgUrl = currentEbookImages[i];
+                
+                const response = await fetch(imgUrl, { mode: 'cors' });
+                const blob = await response.blob();
+                
+                const imgData = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                if (i > 0) pdf.addPage();
+                
+                // Add Image
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                
+                // -- ADD WATERMARK (Footer) --
+                pdf.setFontSize(10);
+                pdf.setTextColor(150, 150, 150); // Gray color
+                
+                // Calculate center text position
+                const textWidth = pdf.getStringUnitWidth(watermarkText) * 10 / pdf.internal.scaleFactor;
+                const textX = (pdfWidth - textWidth) / 2;
+                const textY = pdf.internal.pageSize.getHeight() - 10;
+                
+                pdf.text(watermarkText, textX, textY);
+
+                // -- ADD PAGE NUMBER --
+                // Only for pages after Index (i=0 is cover, i=1 is index)
+                if (i > 1) {
+                    const pageNum = i - 1; // Start counting from 1
+                    pdf.text(`Page ${pageNum}`, pdfWidth - 20, textY);
+                }
+            }
+
+            pdf.save("Mechanic-Guide-Ebook.pdf");
+            showToast("পিডিএফ ডাউনলোড শুরু হয়েছে!");
+        } catch (error) {
+            console.error(error);
+            showToast("পিডিএফ তৈরিতে সমস্যা হয়েছে", "error");
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
+</script>
+
+</body>
+</html>
