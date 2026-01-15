@@ -10,12 +10,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <!-- jsPDF for PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        body { background-color: #f4f6f9; font-family: 'Kalpurush', 'Arial', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;600&display=swap');
+        
+        body { background-color: #f4f6f9; font-family: 'Hind Siliguri', 'Arial', sans-serif; }
         .app-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         
         /* Top Bar */
@@ -41,6 +40,7 @@
         /* Exam Styles */
         .timer-bar { position: sticky; top: 55px; background: #dc3545; color: white; padding: 8px; text-align: center; z-index: 99; font-weight: bold; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .exam-locked-overlay { background: #fff3cd; color: #856404; padding: 20px; text-align: center; border: 1px solid #ffeeba; border-radius: 10px; margin: 20px; }
+        .exam-status-overlay { background: #d1e7dd; color: #0f5132; padding: 20px; text-align: center; border: 1px solid #badbcc; border-radius: 10px; margin: 20px; }
         .question-card { border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
 
         /* Loading Overlay */
@@ -49,9 +49,14 @@
         .content-card { background: #f8f9fa; border-left: 4px solid #2c3e50; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
         .mcq-option { cursor: pointer; padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; }
         .mcq-option:hover { background: #e9ecef; }
-        .mcq-option.selected { background-color: #cfe2ff; border-color: #9ec5fe; }
         
-        .ebook-page { width: 100%; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 5px; }
+        /* Print Styles for PDF */
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -64,7 +69,7 @@
     </div>
 
     <!-- Top Navigation -->
-    <div id="navBar" class="top-bar hidden">
+    <div id="navBar" class="top-bar hidden no-print">
         <div class="d-flex align-items-center">
             <span class="fw-bold me-2"><i class="fas fa-wrench"></i> মেকানিক গাইড</span>
         </div>
@@ -75,14 +80,17 @@
                 <span id="notifBadge" class="notif-badge">!</span>
             </div>
 
-            <span id="navUserName" style="font-size: 12px; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+            <div class="d-flex flex-column align-items-end" style="line-height: 1.2;">
+                <span id="navUserName" style="font-size: 12px; font-weight: bold;">User</span>
+                <span id="navUserId" style="font-size: 10px; color: #ddd;">ID: ...</span>
+            </div>
             <img src="https://via.placeholder.com/40" id="navProfileImg" class="profile-img-top" alt="Profile">
             <button onclick="logout()" class="btn btn-sm btn-danger py-0 px-2" style="height: 30px;"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </div>
 
     <!-- AUTHENTICATION SECTION -->
-    <div id="authSection">
+    <div id="authSection" class="no-print">
         <!-- Login Form -->
         <div id="loginView" class="auth-box">
             <div class="text-center mb-4">
@@ -101,9 +109,9 @@
             <p class="mt-3 text-center">একাউন্ট নেই? <a href="#" onclick="switchView('signup')">সাইন আপ করুন</a></p>
         </div>
 
-        <!-- Signup Form (Updated with District) -->
+        <!-- Signup Form -->
         <div id="signupView" class="auth-box hidden">
-            <h3 class="text-center mb-4">সাইন আপ</h3>
+            <h3 class="text-center mb-4">নতুন একাউন্ট (সাইন আপ)</h3>
             <div class="mb-2">
                 <label>পুরো নাম</label>
                 <input type="text" id="regName" class="form-control">
@@ -121,20 +129,12 @@
                     <option value="Rangpur">রংপুর</option>
                     <option value="Mymensingh">ময়মনসিংহ</option>
                     <option value="Comilla">কুমিল্লা</option>
-                    <option value="Feni">ফেনী</option>
-                    <!-- আরো জেলা যোগ করা যাবে -->
+                    <!-- অন্যান্য -->
                 </select>
             </div>
             <div class="mb-2">
                 <label>জন্ম তারিখ</label>
                 <input type="date" id="regDob" class="form-control">
-            </div>
-            <div class="mb-2">
-                <label>লিঙ্গ</label>
-                <select id="regGender" class="form-control">
-                    <option value="Male">পুরুষ</option>
-                    <option value="Female">মহিলা</option>
-                </select>
             </div>
             <div class="mb-2">
                 <label>ইমেইল</label>
@@ -154,7 +154,7 @@
     </div>
 
     <!-- VERIFICATION SECTION -->
-    <div id="verificationSection" class="auth-box hidden">
+    <div id="verificationSection" class="auth-box hidden no-print">
         <div class="text-center">
             <i class="fas fa-lock fa-3x text-warning mb-3"></i>
             <h4>অ্যাক্টিভেশন প্রয়োজন</h4>
@@ -166,7 +166,7 @@
     </div>
 
     <!-- HOME DASHBOARD -->
-    <div id="homeSection" class="hidden">
+    <div id="homeSection" class="hidden no-print">
         <!-- Slider -->
         <div id="carouselExample" class="carousel slide mb-3" data-bs-ride="carousel">
             <div class="carousel-inner" id="sliderContainer">
@@ -183,9 +183,10 @@
             <span class="badge bg-info text-dark" id="expiryDisplay"></span>
         </div>
 
-        <!-- EXAM ALERT SECTION (If Exam is ON) -->
-        <div id="examAlertSection" class="hidden px-3">
-            <div class="exam-locked-overlay">
+        <!-- EXAM STATUS SECTION -->
+        <div id="examSection" class="px-3">
+            <!-- 1. Exam Locked (Exam Active but not submitted yet) -->
+            <div id="examActiveAlert" class="exam-locked-overlay hidden">
                 <i class="fas fa-clock fa-3x mb-3 text-danger animate__animated animate__pulse animate__infinite"></i>
                 <h4 class="fw-bold">eExam চলছে!</h4>
                 <p class="mb-1">এখন পরীক্ষার সময়। অন্য সকল মেনু বন্ধ আছে।</p>
@@ -194,9 +195,19 @@
                     <i class="fas fa-pen-nib"></i> পরীক্ষায় অংশ নিন
                 </button>
             </div>
+
+            <!-- 2. Exam Taken / Waiting Result -->
+            <div id="examSubmittedAlert" class="exam-status-overlay hidden">
+                <i class="fas fa-clipboard-check fa-3x mb-3 text-success"></i>
+                <h5 class="fw-bold">পরীক্ষা সম্পন্ন হয়েছে!</h5>
+                <p class="small">আপনার উত্তরপত্র জমা হয়েছে। এডমিন ফলাফল প্রকাশ করা পর্যন্ত অপেক্ষা করুন।</p>
+                <button onclick="downloadMyResult()" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-download"></i> উত্তরপত্র ডাউনলোড
+                </button>
+            </div>
         </div>
 
-        <!-- NORMAL MENU GRID (Hidden if Exam is ON) -->
+        <!-- NORMAL MENU GRID -->
         <div id="normalMenuGrid" class="menu-grid">
             <div class="menu-item" onclick="openContentPage('question')">
                 <i class="fas fa-question-circle text-primary"></i>
@@ -221,17 +232,15 @@
         </div>
     </div>
 
-    <!-- EXAM INTERFACE (The Actual Exam) -->
-    <div id="examPage" class="hidden" style="background: white; min-height: 100vh;">
+    <!-- EXAM INTERFACE -->
+    <div id="examPage" class="hidden no-print" style="background: white; min-height: 100vh;">
         <div id="examTimerBar" class="timer-bar">
             সময় বাকি: <span id="timerDisplay">00:00</span>
         </div>
         <div class="p-3">
-            <h5 id="examTitle" class="text-center fw-bold mb-4">...</h5>
+            <h5 class="text-center fw-bold mb-4">ফাইনাল পরীক্ষা</h5>
             <form id="examForm">
-                <div id="examQuestionsContainer">
-                    <!-- Questions will load here -->
-                </div>
+                <div id="examQuestionsContainer"></div>
             </form>
             <button onclick="submitExam(false)" class="btn btn-success w-100 mt-3 btn-lg fw-bold">
                 <i class="fas fa-paper-plane"></i> উত্তরপত্র জমা দিন
@@ -239,31 +248,45 @@
         </div>
     </div>
 
-    <!-- EXAM RESULT / SUBMIT SUCCESS PAGE -->
-    <div id="examSuccessPage" class="hidden auth-box text-center">
+    <!-- EXAM SUCCESS PAGE -->
+    <div id="examSuccessPage" class="hidden auth-box text-center no-print">
         <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
         <h4>উত্তরপত্র জমা হয়েছে!</h4>
-        <p class="text-muted">আপনার উত্তর এডমিনের কাছে পাঠানো হয়েছে। এডমিন চেক করার পর ফলাফল নোটিফিকেশনে জানানো হবে।</p>
-        
-        <button onclick="downloadExamPDF()" class="btn btn-warning w-100 mb-2 fw-bold">
-            <i class="fas fa-file-pdf"></i> উত্তরপত্র ডাউনলোড করুন (PDF)
+        <p class="text-muted">আপনার উত্তর এডমিনের কাছে পাঠানো হয়েছে।</p>
+        <button onclick="printResult()" class="btn btn-warning w-100 mb-2 fw-bold">
+            <i class="fas fa-print"></i> উত্তরপত্র সেভ করুন (PDF)
         </button>
         <button onclick="window.location.reload()" class="btn btn-outline-secondary w-100">
             হোম পেজে যান
         </button>
     </div>
 
-    <!-- CONTENT PAGE (Questions, MCQ, Ebook etc) -->
-    <div id="contentPage" class="hidden" style="background: white; min-height: 100vh;">
+    <!-- CONTENT PAGE -->
+    <div id="contentPage" class="hidden no-print" style="background: white; min-height: 100vh;">
         <div class="top-bar">
             <button onclick="switchView('home')" class="btn btn-sm text-white"><i class="fas fa-arrow-left"></i> ফিরে যান</button>
             <span id="pageTitle" class="fw-bold">Content</span>
-            <button id="pdfBtn" onclick="downloadEbookPdf()" class="btn btn-sm btn-warning hidden fw-bold">
-                <i class="fas fa-file-pdf"></i> PDF
-            </button>
+            <span style="width: 30px;"></span>
         </div>
         <div class="p-3">
             <div id="contentList" class="d-flex flex-column gap-3"></div>
+        </div>
+    </div>
+
+    <!-- PRINTABLE AREA (Hidden until printed) -->
+    <div id="printableArea" class="hidden">
+        <div class="text-center border-bottom pb-3 mb-3">
+            <h2>অটো মেকানিক ই-এক্সাম</h2>
+            <p>উত্তরপত্র</p>
+        </div>
+        <div class="mb-3">
+            <p><strong>নাম:</strong> <span id="printName"></span></p>
+            <p><strong>আইডি:</strong> <span id="printId"></span></p>
+            <p><strong>তারিখ:</strong> <span id="printDate"></span></p>
+        </div>
+        <hr>
+        <div id="printContent">
+            <!-- Questions and Answers will appear here -->
         </div>
     </div>
 
@@ -294,11 +317,10 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    // Firebase Config (একই রাখা হয়েছে)
     const firebaseConfig = {
-        apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0", // আপনার API Key
+        apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0", 
         authDomain: "ansar-vdp.firebaseapp.com",
         projectId: "ansar-vdp",
         storageBucket: "ansar-vdp.firebasestorage.app",
@@ -311,9 +333,8 @@
     const db = getFirestore(app);
 
     let currentUserData = null;
-    let currentEbookImages = []; 
     let examTimerInterval;
-    let examDataForPDF = []; // Store question + user answer for PDF
+    let examSubmissionData = []; // Store for printing
 
     // --- HELPER FUNCTIONS ---
     window.showToast = (msg, type="info") => {
@@ -336,7 +357,7 @@
             document.getElementById(view + "View").classList.remove("hidden");
         } else if(view === 'home') {
             document.getElementById("homeSection").classList.remove("hidden");
-            checkExamStatus(); // Check if exam is ON
+            checkExamConfigAndStatus();
         } else {
             document.getElementById(view).classList.remove("hidden");
         }
@@ -356,37 +377,61 @@
         } catch (error) { throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে"); }
     }
 
-    // --- AUTHENTICATION ---
+    // --- SIGNUP WITH SERIAL ID ---
     window.handleSignup = async () => {
         const name = document.getElementById("regName").value;
-        const district = document.getElementById("regDistrict").value; // Added
+        const district = document.getElementById("regDistrict").value;
         const dob = document.getElementById("regDob").value;
         const email = document.getElementById("regEmail").value;
         const pass = document.getElementById("regPass").value;
         const imgFile = document.getElementById("regImage").files[0];
 
-        if(!name || !email || !pass || !district) return showToast("জেলা সহ সব তথ্য পূরণ করুন", "error");
+        if(!name || !email || !pass || !district) return showToast("সকল তথ্য পূরণ করুন", "error");
 
-        toggleLoading(true, "অ্যাকাউন্ট তৈরি হচ্ছে...");
+        toggleLoading(true, "আইডি তৈরি হচ্ছে...");
         try {
             let imgUrl = "https://via.placeholder.com/150";
             if(imgFile) imgUrl = await uploadToCloudinary(imgFile);
 
+            // 1. Create User Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const user = userCredential.user;
             await updateProfile(user, { displayName: name, photoURL: imgUrl });
 
-            const usersSnap = await getDocs(collection(db, "users"));
-            const isAdmin = usersSnap.empty; 
+            // 2. Generate Serial ID using Transaction
+            const counterRef = doc(db, "metadata", "user_counters");
+            let newSerialId = 100000;
 
-            await setDoc(doc(db, "users", user.uid), {
-                uid: user.uid, fullName: name, district: district, dob: dob, email: email,
-                photoURL: imgUrl, isAdmin: isAdmin, licenseExpiry: null, resultPublished: false
+            await runTransaction(db, async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                if (!counterDoc.exists()) {
+                    newSerialId = 100001;
+                    transaction.set(counterRef, { lastId: 100001 });
+                } else {
+                    const lastId = counterDoc.data().lastId;
+                    newSerialId = lastId + 1;
+                    transaction.update(counterRef, { lastId: newSerialId });
+                }
             });
 
-            showToast("অ্যাকাউন্ট তৈরি সফল!");
+            // 3. Save User Data
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                serialId: newSerialId, // The 6 digit ID
+                fullName: name,
+                district: district,
+                dob: dob,
+                email: email,
+                photoURL: imgUrl,
+                isAdmin: false,
+                licenseExpiry: null,
+                resultPublished: false
+            });
+
+            showToast(`রেজিস্ট্রেশন সফল! আপনার আইডি: ${newSerialId}`);
         } catch (error) {
-            showToast(error.message, "error");
+            console.error(error);
+            showToast("সমস্যা হয়েছে: " + error.message, "error");
             toggleLoading(false);
         }
     }
@@ -402,7 +447,7 @@
 
     window.logout = () => signOut(auth).then(() => window.location.reload());
 
-    // --- AUTH OBSERVER & NOTIFICATION ---
+    // --- AUTH OBSERVER ---
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             if(!currentUserData || currentUserData.uid !== user.uid) {
@@ -411,15 +456,15 @@
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if(userDoc.exists()) {
                         currentUserData = userDoc.data();
+                        
+                        // UI Update
                         document.getElementById("navBar").classList.remove("hidden");
                         document.getElementById("navUserName").innerText = currentUserData.fullName;
-                        document.getElementById("navProfileImg").src = currentUserData.photoURL || "https://via.placeholder.com/40";
-                        
-                        // Check Notification Status
-                        if(currentUserData.resultPublished) {
-                            document.getElementById("notifBadge").style.display = "block";
-                        }
+                        document.getElementById("navUserId").innerText = `ID: ${currentUserData.serialId || 'N/A'}`;
+                        document.getElementById("navProfileImg").src = currentUserData.photoURL;
 
+                        if(currentUserData.resultPublished) document.getElementById("notifBadge").style.display = "block";
+                        
                         checkLicenseValidity();
                     }
                 } catch(e) { console.error(e); toggleLoading(false); }
@@ -427,141 +472,63 @@
         } else { switchView('login'); toggleLoading(false); }
     });
 
-    // --- NOTIFICATION MODAL LOGIC ---
-    window.showNotification = async () => {
-        const modal = new bootstrap.Modal(document.getElementById('notifModal'));
-        const contentDiv = document.getElementById("notifContent");
-        
-        if (currentUserData.resultPublished) {
-            // Fetch result from user doc or result collection
-            // Assuming simplified: result is in user doc for this example
-            let score = currentUserData.examScore || "N/A";
-            let total = currentUserData.examTotal || "N/A";
-            
-            contentDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <h5><i class="fas fa-trophy text-warning"></i> পরীক্ষার ফলাফল প্রকাশিত হয়েছে!</h5>
-                    <hr>
-                    <h2 class="fw-bold text-dark">${score} / ${total}</h2>
-                    <p>আপনার উত্তরপত্র মূল্যায়ন করা হয়েছে।</p>
-                </div>
-                <button onclick="dismissNotif()" class="btn btn-sm btn-secondary">মুছে ফেলুন</button>
-            `;
-        } else {
-            contentDiv.innerHTML = `<p class="text-muted"><i class="fas fa-bell-slash"></i> কোন নতুন নোটিফিকেশন নেই</p>`;
-        }
-        
-        modal.show();
-    }
-
-    window.dismissNotif = async () => {
-        document.getElementById("notifBadge").style.display = "none";
-        await updateDoc(doc(db, "users", auth.currentUser.uid), { resultPublished: false });
-        currentUserData.resultPublished = false;
-        bootstrap.Modal.getInstance(document.getElementById('notifModal')).hide();
-    }
-
-    function checkLicenseValidity() {
-        if(!currentUserData.licenseExpiry) { switchView('verify'); toggleLoading(false); return; }
-        const now = new Date();
-        const expiry = currentUserData.licenseExpiry.toDate();
-        if (now > expiry) {
-            document.getElementById("licenseMsg").innerText = "মেয়াদ শেষ: " + expiry.toLocaleDateString();
-            switchView('verify');
-        } else {
-            switchView('home');
-            loadSlider();
-            const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-            document.getElementById("expiryDisplay").innerText = `মেয়াদ আছে: ${daysLeft} দিন`;
-        }
-        toggleLoading(false);
-    }
-    
-    // --- VERIFY KEY (Same as before) ---
-    window.verifyKey = async () => {
-        const key = document.getElementById("licenseKeyInput").value.trim();
-        if(!key) return showToast("কি (Key) দিন", "error");
-        toggleLoading(true, "যাচাই করা হচ্ছে...");
-        try {
-            const q = query(collection(db, "activation_keys"), where("key", "==", key), where("used", "==", false));
-            const snap = await getDocs(q);
-            if(snap.empty) { showToast("ভুল বা ব্যবহৃত কি!", "error"); toggleLoading(false); return; }
-            let keyData, keyId;
-            snap.forEach(d => { keyData = d.data(); keyId = d.id; });
-            const now = new Date();
-            const newExpiry = new Date(now.setDate(now.getDate() + keyData.days));
-            await updateDoc(doc(db, "users", auth.currentUser.uid), { licenseExpiry: Timestamp.fromDate(newExpiry) });
-            await updateDoc(doc(db, "activation_keys", keyId), { used: true, usedBy: auth.currentUser.uid, usedAt: Timestamp.now() });
-            currentUserData.licenseExpiry = Timestamp.fromDate(newExpiry); 
-            showToast("সফলভাবে অ্যাক্টিভ হয়েছে!");
-            checkLicenseValidity();
-        } catch (e) { showToast("এরর হয়েছে", "error"); toggleLoading(false); }
-    }
-
-    // --- HOME & SLIDER ---
-    async function loadSlider() {
-        try {
-            const sliderDoc = await getDoc(doc(db, "app_settings", "slider"));
-            if(sliderDoc.exists()) {
-                const imgs = sliderDoc.data().images || [];
-                const container = document.getElementById("sliderContainer");
-                container.innerHTML = "";
-                imgs.forEach((url, index) => {
-                    container.innerHTML += `
-                        <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                             <div class="slider-wrapper"><img src="${url}" class="slider-img" alt="..."></div>
-                        </div>`;
-                });
-            }
-        } catch (e) { }
-    }
-
-    // --- E-EXAM SYSTEM ---
-
-    async function checkExamStatus() {
-        // Fetch Exam Config from Firestore
+    // --- EXAM LOGIC UPDATED ---
+    async function checkExamConfigAndStatus() {
         try {
             const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
+            const normalMenu = document.getElementById("normalMenuGrid");
+            const activeAlert = document.getElementById("examActiveAlert");
+            const submittedAlert = document.getElementById("examSubmittedAlert");
+
+            // Reset UI
+            normalMenu.classList.remove("hidden");
+            activeAlert.classList.add("hidden");
+            submittedAlert.classList.add("hidden");
+
             if(settingsDoc.exists() && settingsDoc.data().isOn) {
                 const config = settingsDoc.data();
-                // Exam is ON
-                document.getElementById("normalMenuGrid").classList.add("hidden");
-                document.getElementById("examAlertSection").classList.remove("hidden");
-                document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট | মোট মার্ক: ${config.totalMarks}`;
-                
-                // Store config globally for exam start
                 window.examConfigData = config;
-            } else {
-                // Exam is OFF
-                document.getElementById("normalMenuGrid").classList.remove("hidden");
-                document.getElementById("examAlertSection").classList.add("hidden");
+
+                // Check if user already submitted this exam
+                // We check if a submission exists for this user in general (assuming one exam at a time logic)
+                // Or verify against an exam ID if provided. For now, simple user check.
+                const subQuery = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
+                const subSnap = await getDocs(subQuery);
+
+                if (!subSnap.empty) {
+                    // User has already taken the exam
+                    // Show "Exam Taken" status + Normal Menu
+                    submittedAlert.classList.remove("hidden");
+                    // Menu remains VISIBLE so they can use app after exam
+                    normalMenu.classList.remove("hidden");
+                } else {
+                    // Exam is ON and NOT taken yet
+                    // LOCK the app
+                    normalMenu.classList.add("hidden"); // Hide menu
+                    activeAlert.classList.remove("hidden"); // Show lock screen
+                    document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট | মোট মার্ক: ${config.totalMarks}`;
+                }
             }
-        } catch(e) {
-            console.error("Exam config error", e);
-        }
+        } catch(e) { console.error("Exam check error", e); }
     }
 
     window.startExamIntro = () => {
-        if(confirm("আপনি কি পরীক্ষা শুরু করতে প্রস্তুত? একবার শুরু করলে থামা যাবে না।")) {
-            loadExamQuestions();
-        }
+        if(confirm("আপনি কি পরীক্ষা শুরু করতে প্রস্তুত?")) loadExamQuestions();
     }
 
     async function loadExamQuestions() {
         toggleLoading(true, "প্রশ্নপত্র লোড হচ্ছে...");
         switchView("examPage");
-        
         const container = document.getElementById("examQuestionsContainer");
         container.innerHTML = "";
-        examDataForPDF = [];
+        examSubmissionData = [];
 
         try {
-            // Get questions from 'exam_questions' collection
-            const qQuery = query(collection(db, "exam_questions")); // Assuming admin added questions here
+            const qQuery = query(collection(db, "exam_questions"));
             const querySnapshot = await getDocs(qQuery);
 
             if(querySnapshot.empty) {
-                alert("কোন প্রশ্ন পাওয়া যায়নি। এডমিনের সাথে যোগাযোগ করুন।");
+                alert("প্রশ্ন পাওয়া যায়নি।");
                 switchView('home');
                 return;
             }
@@ -571,34 +538,23 @@
                 const q = doc.data();
                 const qId = doc.id;
                 
-                let html = `<div class="question-card" id="card_${qId}">`;
-                html += `<h6 class="fw-bold"><span class="badge bg-secondary me-2">${index}</span> ${q.question}</h6>`;
-                
-                // Save basics for PDF later
-                examDataForPDF.push({
-                    id: qId,
-                    question: q.question,
-                    type: q.type,
-                    userAnswer: "" // Will fill on submit
-                });
+                // Prepare data structure for printing later
+                examSubmissionData.push({ id: qId, question: q.question, type: q.type, answer: "" });
+
+                let html = `<div class="question-card">
+                    <h6 class="fw-bold">${index}. ${q.question}</h6>`;
 
                 if(q.type === 'mcq' || q.type === 'truefalse') {
-                    // Radios
-                    if(q.options && q.options.length) {
-                        q.options.forEach(opt => {
-                            html += `
-                                <div class="form-check mt-2">
-                                    <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${qId}_${opt}">
-                                    <label class="form-check-label" for="${qId}_${opt}">${opt}</label>
-                                </div>
-                            `;
-                        });
-                    }
-                } else if (q.type === 'short') {
-                    // Text Input
-                    html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="আপনার উত্তর লিখুন..."></textarea>`;
+                    q.options.forEach(opt => {
+                        html += `
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${qId}_${opt}">
+                                <label class="form-check-label" for="${qId}_${opt}">${opt}</label>
+                            </div>`;
+                    });
+                } else {
+                    html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="উত্তর..."></textarea>`;
                 }
-                
                 html += `</div>`;
                 container.innerHTML += html;
                 index++;
@@ -607,188 +563,198 @@
             startTimer(window.examConfigData.duration);
             toggleLoading(false);
 
-        } catch (error) {
-            console.error(error);
-            showToast("প্রশ্ন লোড করতে সমস্যা", "error");
-            switchView('home');
-        }
+        } catch (error) { switchView('home'); }
     }
 
     function startTimer(minutes) {
         let time = minutes * 60;
         const display = document.getElementById("timerDisplay");
-        
         examTimerInterval = setInterval(() => {
             let m = Math.floor(time / 60);
             let s = time % 60;
             display.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-            
-            // Warning color
-            if(time < 60) document.getElementById("examTimerBar").style.background = "#bd2130";
-
-            if (time <= 0) {
-                clearInterval(examTimerInterval);
-                submitExam(true); // Auto submit
-            }
+            if (time <= 0) { clearInterval(examTimerInterval); submitExam(true); }
             time--;
         }, 1000);
     }
 
-    // Submit Exam Logic
     window.submitExam = async (isAuto) => {
         clearInterval(examTimerInterval);
-        toggleLoading(true, isAuto ? "সময় শেষ! অটোমেটিক জমা হচ্ছে..." : "উত্তরপত্র জমা হচ্ছে...");
+        toggleLoading(true, "জমা হচ্ছে...");
 
         const form = document.getElementById("examForm");
         const formData = new FormData(form);
+        let formattedAnswers = [];
         
-        let answers = [];
-        
-        // Map answers back to examDataForPDF and prepare for DB
-        examDataForPDF.forEach(item => {
-            let val = "";
-            if(item.type === 'short') {
-                val = formData.get(item.id) || "উত্তর দেওয়া হয়নি";
-            } else {
-                val = formData.get(item.id) || "সিলেক্ট করা হয়নি";
-            }
-            item.userAnswer = val; // Store for PDF
-            answers.push({ qId: item.id, question: item.question, answer: val });
+        // Prepare data for Admin Marking
+        // Structure: { qId, question, userAns, obtainedMark: 0 }
+        examSubmissionData.forEach(item => {
+            let val = formData.get(item.id) || (item.type === 'short' ? "উত্তর দেওয়া হয়নি" : "Selected None");
+            item.answer = val; // update local for print
+            
+            formattedAnswers.push({
+                questionId: item.id,
+                questionTitle: item.question,
+                userAnswer: val,
+                obtainedMark: 0 // Admin will update this
+            });
         });
 
         try {
-            // Save to Firestore 'exam_submissions'
             await addDoc(collection(db, "exam_submissions"), {
                 uid: auth.currentUser.uid,
+                serialId: currentUserData.serialId,
                 name: currentUserData.fullName,
                 district: currentUserData.district,
                 submittedAt: Timestamp.now(),
-                answers: answers,
-                status: 'pending', // Pending manual check
-                score: 0
+                answers: formattedAnswers, // Admin needs this array
+                totalScore: 0,
+                status: 'pending'
             });
 
             toggleLoading(false);
             switchView('examSuccessPage');
-            
+            preparePrintData(); // Prepare the hidden printable area
         } catch (error) {
-            console.error(error);
-            showToast("জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।", "error");
+            showToast("এরর হয়েছে!", "error");
             toggleLoading(false);
         }
     }
 
-    // Generate PDF of Answer Script
-    window.downloadExamPDF = () => {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+    // --- PRINT / PDF LOGIC ---
+    function preparePrintData() {
+        document.getElementById("printName").innerText = currentUserData.fullName;
+        document.getElementById("printId").innerText = currentUserData.serialId;
+        document.getElementById("printDate").innerText = new Date().toLocaleDateString('bn-BD');
         
-        // Add support for Bangla Font requires custom font loading in jsPDF which is complex in single file.
-        // For this demo, we assume English or basic support, or warn user.
-        // To support Bangla properly in jsPDF, you need a base64 encoded font string. 
-        // For simplicity, we will output plain text and warn if characters break, 
-        // OR better: Use a simple English header and list answers.
-        
-        doc.setFontSize(18);
-        doc.text("Exam Answer Script", 105, 20, null, null, "center");
-        doc.setFontSize(12);
-        doc.text(`Name: ${currentUserData.fullName}`, 20, 30);
-        doc.text(`ID: ${auth.currentUser.uid.substring(0,8)}...`, 20, 38);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 30);
-        
-        let y = 50;
-        
-        doc.setLineWidth(0.5);
-        doc.line(20, 42, 190, 42);
-
-        examDataForPDF.forEach((item, i) => {
-            if(y > 270) { doc.addPage(); y = 20; }
-            
-            // Note: jsPDF default fonts don't support Bangla. 
-            // In a real production app, you must add 'SolaimanLipi' or similar .ttf as base64.
-            // Here we just try to print. If Bangla fails, it shows garbage.
-            // Since this is a requirement, assume English questions or specialized font handling.
-            // Fallback strategy for this snippet: Just put labels clearly.
-            
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(`Q${i+1}: (Question ID: ${item.id})`, 20, y);
-            
-            doc.setFontSize(11);
-            doc.setTextColor(0);
-            // Split text to fit width
-            const qLines = doc.splitTextToSize(`Q: ${item.question}`, 170);
-            doc.text(qLines, 20, y + 5);
-            
-            y += (qLines.length * 5) + 2;
-            
-            doc.setTextColor(0, 100, 0); // Green color for answer
-            const aLines = doc.splitTextToSize(`Ans: ${item.userAnswer}`, 170);
-            doc.text(aLines, 20, y + 5);
-            
-            y += (aLines.length * 5) + 10;
+        let html = "";
+        examSubmissionData.forEach((item, i) => {
+            html += `
+                <div style="margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                    <p style="font-weight: bold; margin:0;">${i+1}. ${item.question}</p>
+                    <p style="margin:0; color: #2980b9;">উত্তর: ${item.answer}</p>
+                </div>
+            `;
         });
+        document.getElementById("printContent").innerHTML = html;
+    }
 
-        doc.save("Answer_Script.pdf");
-    };
-
-    // --- OTHER CONTENT (UNCHANGED LOGIC) ---
-    window.openContentPage = async (type) => {
-        switchView('content');
-        document.getElementById("pdfBtn").classList.add("hidden");
-        currentEbookImages = []; 
-
-        const titles = {
-            'question': 'প্রশ্ন ও উত্তর',
-            'mcq': 'MCQ প্র্যাকটিস',
-            'truefalse': 'সত্য / মিথ্যা যাচাই',
-            'translate': 'ইঞ্জিন পার্টস অনুবাদ',
-            'ebook': 'মেকানিক ই-বুক'
-        };
-        document.getElementById("pageTitle").innerText = titles[type] || "Content";
-        
-        const listContainer = document.getElementById("contentList");
-        listContainer.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div><p class="mt-2 small">লোড হচ্ছে...</p></div>';
-
-        try {
-            const q = query(collection(db, "contents"), where("type", "==", type), orderBy("createdAt", "asc"));
-            const querySnapshot = await getDocs(q);
-
-            listContainer.innerHTML = ""; 
-            if(querySnapshot.empty) {
-                listContainer.innerHTML = '<div class="alert alert-warning text-center">কোন তথ্য পাওয়া যায়নি</div>';
-                return;
-            }
-
-            if(type === 'ebook') document.getElementById("pdfBtn").classList.remove("hidden");
-            
-            let serialCount = 0;
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                serialCount++;
-                const div = document.createElement("div");
-
-                if (type === 'ebook' && data.image) {
-                    currentEbookImages.push(data.image);
-                    div.className = "mb-3";
-                    div.innerHTML = `<img src="${data.image}" class="ebook-page">`;
-                } else {
-                    div.className = "content-card animate__animated animate__fadeIn bg-white p-3 shadow-sm rounded mb-3 border";
-                    // (বাকি কন্টেন্ট রেন্ডারিং লজিক আগের মতই রাখা হয়েছে সংক্ষিপ্ততার জন্য)
-                    if(type === 'question') {
-                         div.innerHTML = `<h6>${serialCount}. ${data.question}</h6><p class="text-muted bg-light p-2">${data.answer}</p>`;
-                    } else if (type === 'mcq') {
-                        let opts = data.options.map(o => `<div class="mcq-option" onclick="this.classList.toggle('selected')">${o}</div>`).join("");
-                        div.innerHTML = `<h6>${serialCount}. ${data.question}</h6>${opts}`;
-                    }
-                }
-                listContainer.appendChild(div);
-            });
-        } catch (e) { listContainer.innerHTML = '<p class="text-danger text-center">এরর হয়েছে</p>'; }
+    window.printResult = () => {
+        // Trigger browser print dialog
+        // CSS @media print ensures only #printableArea is shown
+        window.print();
     }
     
-    // Ebook PDF Download Logic (Same as before)
-    window.downloadEbookPdf = async () => { /* আগের কোড অপরিবর্তিত */ };
+    // For users who already submitted and want to download later
+    window.downloadMyResult = async () => {
+        toggleLoading(true, "লোড হচ্ছে...");
+        try {
+            const q = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
+            const snap = await getDocs(q);
+            if(!snap.empty) {
+                // Get the last submission
+                const data = snap.docs[0].data();
+                // Map back to examSubmissionData format for printer
+                examSubmissionData = data.answers.map(a => ({
+                    question: a.questionTitle,
+                    answer: a.userAnswer
+                }));
+                preparePrintData();
+                toggleLoading(false);
+                setTimeout(() => window.print(), 500);
+            } else {
+                showToast("কোন তথ্য পাওয়া যায়নি", "error");
+                toggleLoading(false);
+            }
+        } catch(e) { toggleLoading(false); }
+    }
+
+    // --- OTHER AUTH & LICENSE FUNCTIONS (Standard) ---
+    window.verifyKey = async () => {
+        const key = document.getElementById("licenseKeyInput").value.trim();
+        if(!key) return showToast("কি (Key) দিন", "error");
+        toggleLoading(true, "যাচাই করা হচ্ছে...");
+        try {
+            const q = query(collection(db, "activation_keys"), where("key", "==", key), where("used", "==", false));
+            const snap = await getDocs(q);
+            if(snap.empty) { showToast("ভুল বা ব্যবহৃত কি!", "error"); toggleLoading(false); return; }
+            
+            let keyData, keyId;
+            snap.forEach(d => { keyData = d.data(); keyId = d.id; });
+            
+            const now = new Date();
+            const newExpiry = new Date(now.setDate(now.getDate() + keyData.days));
+            
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { licenseExpiry: Timestamp.fromDate(newExpiry) });
+            await updateDoc(doc(db, "activation_keys", keyId), { used: true, usedBy: auth.currentUser.uid });
+            
+            currentUserData.licenseExpiry = Timestamp.fromDate(newExpiry);
+            showToast("অ্যাক্টিভ হয়েছে!");
+            checkLicenseValidity();
+        } catch (e) { showToast("এরর হয়েছে", "error"); toggleLoading(false); }
+    }
+
+    function checkLicenseValidity() {
+        if(!currentUserData.licenseExpiry) { switchView('verificationSection'); toggleLoading(false); return; }
+        const now = new Date();
+        const expiry = currentUserData.licenseExpiry.toDate();
+        if (now > expiry) {
+            document.getElementById("licenseMsg").innerText = "মেয়াদ শেষ: " + expiry.toLocaleDateString();
+            switchView('verificationSection');
+        } else {
+            switchView('home');
+            loadSlider();
+            const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+            document.getElementById("expiryDisplay").innerText = `মেয়াদ আছে: ${daysLeft} দিন`;
+        }
+        toggleLoading(false);
+    }
+    
+    // Notification & Content Loaders
+    window.showNotification = () => {
+        const modal = new bootstrap.Modal(document.getElementById('notifModal'));
+        if(currentUserData.resultPublished) {
+            // Fetch result logic needed here if extended, keeping simple for now
+            document.getElementById("notifContent").innerHTML = `
+                <div class="alert alert-success">
+                    <h5>ফলাফল প্রকাশিত হয়েছে!</h5>
+                    <p>এডমিন আপনার খাতা দেখেছেন।</p>
+                </div>`;
+        }
+        modal.show();
+    }
+
+    async function loadSlider() {
+        try {
+            const docSnap = await getDoc(doc(db, "app_settings", "slider"));
+            if(docSnap.exists() && docSnap.data().images) {
+                const imgs = docSnap.data().images;
+                const c = document.getElementById("sliderContainer");
+                c.innerHTML = "";
+                imgs.forEach((u, i) => {
+                    c.innerHTML += `<div class="carousel-item ${i===0?'active':''}"><div class="slider-wrapper"><img src="${u}" class="slider-img"></div></div>`;
+                });
+            }
+        } catch(e) {}
+    }
+    
+    window.openContentPage = async (type) => {
+        switchView('contentPage');
+        const list = document.getElementById("contentList");
+        list.innerHTML = "Loading...";
+        try {
+            const q = query(collection(db, "contents"), where("type", "==", type));
+            const snap = await getDocs(q);
+            list.innerHTML = "";
+            if(snap.empty) { list.innerHTML = "No Content"; return; }
+            let i = 1;
+            snap.forEach(d => {
+                const dt = d.data();
+                if(type==='ebook') list.innerHTML += `<img src="${dt.image}" class="img-fluid mb-2 border">`;
+                else list.innerHTML += `<div class="content-card"><h6>${i++}. ${dt.question}</h6><p>${dt.answer||''}</p></div>`;
+            });
+        } catch(e) { list.innerHTML = "Error"; }
+    }
 
 </script>
 </body>
