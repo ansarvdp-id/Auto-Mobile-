@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>অটো মেকানিক গাইড ও ই-এক্সাম</title>
+    <title>অটো মেকানিক ই-এক্সাম</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -32,11 +32,6 @@
         .slider-wrapper { position: relative; width: 100%; padding-top: 56.25%; overflow: hidden; }
         .slider-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
-        .menu-item { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .menu-item:hover { background: #e3f2fd; transform: translateY(-3px); }
-        .menu-item i { font-size: 24px; color: #2c3e50; margin-bottom: 10px; }
-        
         /* Exam Styles */
         .timer-bar { position: sticky; top: 55px; background: #dc3545; color: white; padding: 8px; text-align: center; z-index: 99; font-weight: bold; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .exam-locked-overlay { background: #fff3cd; color: #856404; padding: 20px; text-align: center; border: 1px solid #ffeeba; border-radius: 10px; margin: 20px; }
@@ -46,16 +41,25 @@
         /* Loading Overlay */
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
-        .content-card { background: #f8f9fa; border-left: 4px solid #2c3e50; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
         .mcq-option { cursor: pointer; padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; }
         .mcq-option:hover { background: #e9ecef; }
         
-        /* Print Styles for PDF */
+        /* --- FIXED PRINT STYLES --- */
         @media print {
-            body * { visibility: hidden; }
-            #printableArea, #printableArea * { visibility: visible; }
-            #printableArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
-            .no-print { display: none !important; }
+            body { background-color: white; }
+            .app-container, .no-print, .modal, .toastify { display: none !important; }
+            
+            #printableArea { 
+                display: block !important; 
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                width: 100%;
+                z-index: 9999;
+                padding: 40px;
+                background: white;
+            }
+            .print-item { page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
         }
     </style>
 </head>
@@ -71,7 +75,7 @@
     <!-- Top Navigation -->
     <div id="navBar" class="top-bar hidden no-print">
         <div class="d-flex align-items-center">
-            <span class="fw-bold me-2"><i class="fas fa-wrench"></i> মেকানিক গাইড</span>
+            <span class="fw-bold me-2"><i class="fas fa-edit"></i> মেকানিক e-Exam</span>
         </div>
         <div class="d-flex align-items-center gap-2">
             <!-- Notification Bell -->
@@ -94,7 +98,7 @@
         <!-- Login Form -->
         <div id="loginView" class="auth-box">
             <div class="text-center mb-4">
-                <i class="fas fa-cogs fa-3x text-primary"></i>
+                <i class="fas fa-user-graduate fa-3x text-primary"></i>
                 <h3 class="mt-2">লগইন করুন</h3>
             </div>
             <div class="mb-3">
@@ -118,7 +122,6 @@
             </div>
             <div class="mb-2">
                 <label>জেলা নির্বাচন করুন</label>
-                <!-- District List loaded from DB -->
                 <select id="regDistrict" class="form-control">
                     <option value="">লোডিং...</option>
                 </select>
@@ -156,14 +159,14 @@
         </div>
     </div>
 
-    <!-- HOME DASHBOARD -->
+    <!-- HOME DASHBOARD (ONLY EXAM) -->
     <div id="homeSection" class="hidden no-print">
         <!-- Slider -->
         <div id="carouselExample" class="carousel slide mb-3" data-bs-ride="carousel">
             <div class="carousel-inner" id="sliderContainer">
                 <div class="carousel-item active">
                     <div class="slider-wrapper">
-                        <img src="https://via.placeholder.com/640x360?text=Auto+Mechanic" class="slider-img" alt="...">
+                        <img src="https://via.placeholder.com/640x360?text=Auto+Mechanic+Exam" class="slider-img" alt="...">
                     </div>
                 </div>
             </div>
@@ -176,18 +179,26 @@
 
         <!-- EXAM STATUS SECTION -->
         <div id="examSection" class="px-3">
-            <!-- 1. Exam Locked (Exam Active but not submitted yet) -->
+            
+            <!-- Message when Exam is OFF -->
+            <div id="noExamMessage" class="text-center mt-4 hidden">
+                <i class="fas fa-mug-hot fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">বর্তমানে কোনো পরীক্ষা চালু নেই</h5>
+                <p class="small text-muted">এডমিন পরীক্ষা চালু করলে এখানে নোটিফিকেশন দেখতে পাবেন।</p>
+            </div>
+
+            <!-- 1. Exam Locked -->
             <div id="examActiveAlert" class="exam-locked-overlay hidden">
                 <i class="fas fa-clock fa-3x mb-3 text-danger animate__animated animate__pulse animate__infinite"></i>
                 <h4 class="fw-bold">eExam চলছে!</h4>
-                <p class="mb-1">এখন পরীক্ষার সময়। অন্য সকল মেনু বন্ধ আছে।</p>
+                <p class="mb-1">এখন পরীক্ষার সময়।</p>
                 <p class="small text-muted mb-3" id="examMetaDisplay">সময়: ৩০ মি. | মার্ক: ৫০</p>
                 <button onclick="startExamIntro()" class="btn btn-danger w-100 fw-bold shadow">
                     <i class="fas fa-pen-nib"></i> পরীক্ষায় অংশ নিন
                 </button>
             </div>
 
-            <!-- 2. Exam Taken / Waiting Result -->
+            <!-- 2. Exam Taken -->
             <div id="examSubmittedAlert" class="exam-status-overlay hidden">
                 <i class="fas fa-clipboard-check fa-3x mb-3 text-success"></i>
                 <h5 class="fw-bold">পরীক্ষা সম্পন্ন হয়েছে!</h5>
@@ -197,30 +208,7 @@
                 </button>
             </div>
         </div>
-
-        <!-- NORMAL MENU GRID -->
-        <div id="normalMenuGrid" class="menu-grid">
-            <div class="menu-item" onclick="openContentPage('question')">
-                <i class="fas fa-question-circle text-primary"></i>
-                <div>প্রশ্ন ও উত্তর</div>
-            </div>
-            <div class="menu-item" onclick="openContentPage('mcq')">
-                <i class="fas fa-list-check text-success"></i>
-                <div>MCQ</div>
-            </div>
-            <div class="menu-item" onclick="openContentPage('truefalse')">
-                <i class="fas fa-check-circle text-warning"></i>
-                <div>সত্য / মিথ্যা</div>
-            </div>
-            <div class="menu-item" onclick="openContentPage('translate')">
-                <i class="fas fa-language text-danger"></i>
-                <div>অনুবাদ</div>
-            </div>
-            <div class="menu-item" onclick="openContentPage('ebook')">
-                <i class="fas fa-book-open text-info"></i>
-                <div>ই-বুক</div>
-            </div>
-        </div>
+        <!-- Menu Grid REMOVED -->
     </div>
 
     <!-- EXAM INTERFACE -->
@@ -252,35 +240,6 @@
         </button>
     </div>
 
-    <!-- CONTENT PAGE -->
-    <div id="contentPage" class="hidden no-print" style="background: white; min-height: 100vh;">
-        <div class="top-bar">
-            <button onclick="switchView('home')" class="btn btn-sm text-white"><i class="fas fa-arrow-left"></i> ফিরে যান</button>
-            <span id="pageTitle" class="fw-bold">Content</span>
-            <span style="width: 30px;"></span>
-        </div>
-        <div class="p-3">
-            <div id="contentList" class="d-flex flex-column gap-3"></div>
-        </div>
-    </div>
-
-    <!-- PRINTABLE AREA (Hidden until printed) -->
-    <div id="printableArea" class="hidden">
-        <div class="text-center border-bottom pb-3 mb-3">
-            <h2>অটো মেকানিক ই-এক্সাম</h2>
-            <p>উত্তরপত্র</p>
-        </div>
-        <div class="mb-3">
-            <p><strong>নাম:</strong> <span id="printName"></span></p>
-            <p><strong>আইডি:</strong> <span id="printId"></span></p>
-            <p><strong>তারিখ:</strong> <span id="printDate"></span></p>
-        </div>
-        <hr>
-        <div id="printContent">
-            <!-- Questions and Answers will appear here -->
-        </div>
-    </div>
-
     <!-- Notification Modal -->
     <div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -298,6 +257,23 @@
         </div>
     </div>
 
+</div>
+
+<!-- PRINTABLE AREA -->
+<div id="printableArea" class="hidden">
+    <div class="text-center border-bottom pb-3 mb-3">
+        <h2>অটো মেকানিক ই-এক্সাম</h2>
+        <p>উত্তরপত্র</p>
+    </div>
+    <div class="mb-3">
+        <p><strong>নাম:</strong> <span id="printName"></span></p>
+        <p><strong>আইডি:</strong> <span id="printId"></span></p>
+        <p><strong>তারিখ:</strong> <span id="printDate"></span></p>
+    </div>
+    <hr>
+    <div id="printContent">
+        <!-- Questions and Answers will appear here -->
+    </div>
 </div>
 
 <!-- Scripts -->
@@ -339,14 +315,16 @@
     }
 
     window.switchView = (view) => {
-        const views = ["loginView", "signupView", "homeSection", "verificationSection", "contentPage", "examPage", "examSuccessPage"];
+        // Removed 'contentPage' from views list
+        const views = ["loginView", "signupView", "homeSection", "verificationSection", "examPage", "examSuccessPage"];
         views.forEach(v => document.getElementById(v)?.classList.add("hidden"));
         document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("printableArea").classList.add("hidden");
 
         if(view === 'login' || view === 'signup') {
             document.getElementById("authSection").classList.remove("hidden");
             document.getElementById(view + "View").classList.remove("hidden");
-            if(view === 'signup') loadSignupDistricts(); // Load districts when signup page opens
+            if(view === 'signup') loadSignupDistricts();
         } else if(view === 'home') {
             document.getElementById("homeSection").classList.remove("hidden");
             checkExamConfigAndStatus();
@@ -369,17 +347,14 @@
         } catch (error) { throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে"); }
     }
 
-    // --- LOAD DISTRICTS FROM DB (NEW FUNCTION) ---
+    // --- LOAD DISTRICTS ---
     async function loadSignupDistricts() {
         const select = document.getElementById("regDistrict");
         select.innerHTML = '<option value="">লোড হচ্ছে...</option>';
-        
         try {
             const docRef = doc(db, "app_settings", "districts");
             const docSnap = await getDoc(docRef);
-            
             select.innerHTML = '<option value="">জেলা নির্বাচন করুন...</option>';
-            
             if(docSnap.exists() && docSnap.data().list) {
                 const list = docSnap.data().list;
                 list.sort().forEach(dist => {
@@ -389,8 +364,7 @@
                     select.appendChild(opt);
                 });
             } else {
-                 // Fallback if no list exists
-                 const defaults = ["Dhaka", "Chittagong", "Rajshahi"];
+                 const defaults = ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barisal", "Sylhet", "Rangpur", "Mymensingh"];
                  defaults.forEach(d => {
                      const opt = document.createElement("option");
                      opt.value = d; opt.innerText = d; select.appendChild(opt);
@@ -402,7 +376,7 @@
         }
     }
 
-    // --- SIGNUP WITH SERIAL ID ---
+    // --- AUTH ---
     window.handleSignup = async () => {
         const name = document.getElementById("regName").value;
         const district = document.getElementById("regDistrict").value;
@@ -418,12 +392,10 @@
             let imgUrl = "https://via.placeholder.com/150";
             if(imgFile) imgUrl = await uploadToCloudinary(imgFile);
 
-            // 1. Create User Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             const user = userCredential.user;
             await updateProfile(user, { displayName: name, photoURL: imgUrl });
 
-            // 2. Generate Serial ID using Transaction
             const counterRef = doc(db, "metadata", "user_counters");
             let newSerialId = 100000;
 
@@ -439,7 +411,6 @@
                 }
             });
 
-            // 3. Save User Data
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 serialId: newSerialId, 
@@ -472,7 +443,6 @@
 
     window.logout = () => signOut(auth).then(() => window.location.reload());
 
-    // --- AUTH OBSERVER ---
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             if(!currentUserData || currentUserData.uid !== user.uid) {
@@ -500,14 +470,14 @@
     async function checkExamConfigAndStatus() {
         try {
             const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
-            const normalMenu = document.getElementById("normalMenuGrid");
             const activeAlert = document.getElementById("examActiveAlert");
             const submittedAlert = document.getElementById("examSubmittedAlert");
+            const noExamMsg = document.getElementById("noExamMessage");
 
             // Reset UI
-            normalMenu.classList.remove("hidden");
             activeAlert.classList.add("hidden");
             submittedAlert.classList.add("hidden");
+            noExamMsg.classList.add("hidden");
 
             if(settingsDoc.exists() && settingsDoc.data().isOn) {
                 const config = settingsDoc.data();
@@ -518,12 +488,13 @@
 
                 if (!subSnap.empty) {
                     submittedAlert.classList.remove("hidden");
-                    normalMenu.classList.remove("hidden");
                 } else {
-                    normalMenu.classList.add("hidden"); 
                     activeAlert.classList.remove("hidden");
                     document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট`;
                 }
+            } else {
+                // Exam is OFF
+                noExamMsg.classList.remove("hidden");
             }
         } catch(e) { console.error("Exam check error", e); }
     }
@@ -554,19 +525,38 @@
                 const q = doc.data();
                 const qId = doc.id;
                 
-                examSubmissionData.push({ id: qId, question: q.question, type: q.type, answer: "" });
+                examSubmissionData.push({ 
+                    id: qId, 
+                    question: q.question, 
+                    type: q.type, 
+                    answer: "",
+                    image: q.image || null 
+                });
+
+                let imageHtml = "";
+                if(q.image) {
+                    imageHtml = `<div class="text-center mb-2">
+                                    <img src="${q.image}" class="img-fluid rounded border" style="max-height: 180px;">
+                                 </div>`;
+                }
 
                 let html = `<div class="question-card">
+                    ${imageHtml}
                     <h6 class="fw-bold">${index}. ${q.question}</h6>`;
 
                 if(q.type === 'mcq' || q.type === 'truefalse') {
-                    q.options.forEach(opt => {
-                        html += `
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${qId}_${opt}">
-                                <label class="form-check-label" for="${qId}_${opt}">${opt}</label>
-                            </div>`;
-                    });
+                    if(q.options && q.options.length > 0) {
+                        q.options.forEach((opt, idx) => {
+                            const uniqueId = `${qId}_${idx}`; 
+                            html += `
+                                <div class="form-check mt-2 mcq-option" onclick="document.getElementById('${uniqueId}').checked=true">
+                                    <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${uniqueId}">
+                                    <label class="form-check-label w-100" style="cursor:pointer;" for="${uniqueId}">${opt}</label>
+                                </div>`;
+                        });
+                    } else {
+                        html += `<p class="text-danger small">কোন অপশন সেট করা নেই</p>`;
+                    }
                 } else {
                     html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="উত্তর..."></textarea>`;
                 }
@@ -578,7 +568,10 @@
             startTimer(window.examConfigData.duration);
             toggleLoading(false);
 
-        } catch (error) { switchView('home'); }
+        } catch (error) { 
+            console.error(error);
+            switchView('home'); 
+        }
     }
 
     function startTimer(minutes) {
@@ -642,14 +635,18 @@
         
         let html = "";
         examSubmissionData.forEach((item, i) => {
+            let imgHTML = item.image ? `<br><img src="${item.image}" style="max-height: 100px; margin: 5px 0;">` : '';
+            
             html += `
-                <div style="margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                <div class="print-item">
                     <p style="font-weight: bold; margin:0;">${i+1}. ${item.question}</p>
-                    <p style="margin:0; color: #2980b9;">উত্তর: ${item.answer}</p>
+                    ${imgHTML}
+                    <p style="margin:5px 0 0 0; color: #2980b9;">উত্তর: <strong>${item.answer}</strong></p>
                 </div>
             `;
         });
         document.getElementById("printContent").innerHTML = html;
+        document.getElementById("printableArea").classList.remove("hidden");
     }
 
     window.printResult = () => {
@@ -665,8 +662,10 @@
                 const data = snap.docs[0].data();
                 examSubmissionData = data.answers.map(a => ({
                     question: a.questionTitle,
-                    answer: a.userAnswer
+                    answer: a.userAnswer,
+                    image: null 
                 }));
+                
                 preparePrintData();
                 toggleLoading(false);
                 setTimeout(() => window.print(), 500);
@@ -674,10 +673,10 @@
                 showToast("কোন তথ্য পাওয়া যায়নি", "error");
                 toggleLoading(false);
             }
-        } catch(e) { toggleLoading(false); }
+        } catch(e) { toggleLoading(false); console.error(e); }
     }
 
-    // --- OTHER AUTH & LICENSE FUNCTIONS ---
+    // --- LICENSE & KEY ---
     window.verifyKey = async () => {
         const key = document.getElementById("licenseKeyInput").value.trim();
         if(!key) return showToast("কি (Key) দিন", "error");
@@ -742,24 +741,6 @@
                 });
             }
         } catch(e) {}
-    }
-    
-    window.openContentPage = async (type) => {
-        switchView('contentPage');
-        const list = document.getElementById("contentList");
-        list.innerHTML = "Loading...";
-        try {
-            const q = query(collection(db, "contents"), where("type", "==", type));
-            const snap = await getDocs(q);
-            list.innerHTML = "";
-            if(snap.empty) { list.innerHTML = "No Content"; return; }
-            let i = 1;
-            snap.forEach(d => {
-                const dt = d.data();
-                if(type==='ebook') list.innerHTML += `<img src="${dt.image}" class="img-fluid mb-2 border">`;
-                else list.innerHTML += `<div class="content-card"><h6>${i++}. ${dt.question}</h6><p>${dt.answer||''}</p></div>`;
-            });
-        } catch(e) { list.innerHTML = "Error"; }
     }
 
 </script>
