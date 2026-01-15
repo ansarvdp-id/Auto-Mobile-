@@ -118,18 +118,9 @@
             </div>
             <div class="mb-2">
                 <label>জেলা নির্বাচন করুন</label>
+                <!-- District List loaded from DB -->
                 <select id="regDistrict" class="form-control">
-                    <option value="">জেলা নির্বাচন করুন...</option>
-                    <option value="Dhaka">ঢাকা</option>
-                    <option value="Chittagong">চট্টগ্রাম</option>
-                    <option value="Rajshahi">রাজশাহী</option>
-                    <option value="Khulna">খুলনা</option>
-                    <option value="Barisal">বরিশাল</option>
-                    <option value="Sylhet">সিলেট</option>
-                    <option value="Rangpur">রংপুর</option>
-                    <option value="Mymensingh">ময়মনসিংহ</option>
-                    <option value="Comilla">কুমিল্লা</option>
-                    <!-- অন্যান্য -->
+                    <option value="">লোডিং...</option>
                 </select>
             </div>
             <div class="mb-2">
@@ -334,7 +325,7 @@
 
     let currentUserData = null;
     let examTimerInterval;
-    let examSubmissionData = []; // Store for printing
+    let examSubmissionData = [];
 
     // --- HELPER FUNCTIONS ---
     window.showToast = (msg, type="info") => {
@@ -355,6 +346,7 @@
         if(view === 'login' || view === 'signup') {
             document.getElementById("authSection").classList.remove("hidden");
             document.getElementById(view + "View").classList.remove("hidden");
+            if(view === 'signup') loadSignupDistricts(); // Load districts when signup page opens
         } else if(view === 'home') {
             document.getElementById("homeSection").classList.remove("hidden");
             checkExamConfigAndStatus();
@@ -375,6 +367,39 @@
             let data = await res.json();
             return data.secure_url;
         } catch (error) { throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে"); }
+    }
+
+    // --- LOAD DISTRICTS FROM DB (NEW FUNCTION) ---
+    async function loadSignupDistricts() {
+        const select = document.getElementById("regDistrict");
+        select.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+        
+        try {
+            const docRef = doc(db, "app_settings", "districts");
+            const docSnap = await getDoc(docRef);
+            
+            select.innerHTML = '<option value="">জেলা নির্বাচন করুন...</option>';
+            
+            if(docSnap.exists() && docSnap.data().list) {
+                const list = docSnap.data().list;
+                list.sort().forEach(dist => {
+                    const opt = document.createElement("option");
+                    opt.value = dist;
+                    opt.innerText = dist;
+                    select.appendChild(opt);
+                });
+            } else {
+                 // Fallback if no list exists
+                 const defaults = ["Dhaka", "Chittagong", "Rajshahi"];
+                 defaults.forEach(d => {
+                     const opt = document.createElement("option");
+                     opt.value = d; opt.innerText = d; select.appendChild(opt);
+                 });
+            }
+        } catch(e) {
+            console.error(e);
+            select.innerHTML = '<option value="">ডাটা লোড হয়নি</option>';
+        }
     }
 
     // --- SIGNUP WITH SERIAL ID ---
@@ -417,7 +442,7 @@
             // 3. Save User Data
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
-                serialId: newSerialId, // The 6 digit ID
+                serialId: newSerialId, 
                 fullName: name,
                 district: district,
                 dob: dob,
@@ -457,7 +482,6 @@
                     if(userDoc.exists()) {
                         currentUserData = userDoc.data();
                         
-                        // UI Update
                         document.getElementById("navBar").classList.remove("hidden");
                         document.getElementById("navUserName").innerText = currentUserData.fullName;
                         document.getElementById("navUserId").innerText = `ID: ${currentUserData.serialId || 'N/A'}`;
@@ -472,7 +496,7 @@
         } else { switchView('login'); toggleLoading(false); }
     });
 
-    // --- EXAM LOGIC UPDATED ---
+    // --- EXAM LOGIC ---
     async function checkExamConfigAndStatus() {
         try {
             const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
@@ -489,24 +513,16 @@
                 const config = settingsDoc.data();
                 window.examConfigData = config;
 
-                // Check if user already submitted this exam
-                // We check if a submission exists for this user in general (assuming one exam at a time logic)
-                // Or verify against an exam ID if provided. For now, simple user check.
                 const subQuery = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
                 const subSnap = await getDocs(subQuery);
 
                 if (!subSnap.empty) {
-                    // User has already taken the exam
-                    // Show "Exam Taken" status + Normal Menu
                     submittedAlert.classList.remove("hidden");
-                    // Menu remains VISIBLE so they can use app after exam
                     normalMenu.classList.remove("hidden");
                 } else {
-                    // Exam is ON and NOT taken yet
-                    // LOCK the app
-                    normalMenu.classList.add("hidden"); // Hide menu
-                    activeAlert.classList.remove("hidden"); // Show lock screen
-                    document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট | মোট মার্ক: ${config.totalMarks}`;
+                    normalMenu.classList.add("hidden"); 
+                    activeAlert.classList.remove("hidden");
+                    document.getElementById("examMetaDisplay").innerText = `সময়: ${config.duration} মিনিট`;
                 }
             }
         } catch(e) { console.error("Exam check error", e); }
@@ -538,7 +554,6 @@
                 const q = doc.data();
                 const qId = doc.id;
                 
-                // Prepare data structure for printing later
                 examSubmissionData.push({ id: qId, question: q.question, type: q.type, answer: "" });
 
                 let html = `<div class="question-card">
@@ -586,17 +601,15 @@
         const formData = new FormData(form);
         let formattedAnswers = [];
         
-        // Prepare data for Admin Marking
-        // Structure: { qId, question, userAns, obtainedMark: 0 }
         examSubmissionData.forEach(item => {
             let val = formData.get(item.id) || (item.type === 'short' ? "উত্তর দেওয়া হয়নি" : "Selected None");
-            item.answer = val; // update local for print
+            item.answer = val;
             
             formattedAnswers.push({
                 questionId: item.id,
                 questionTitle: item.question,
                 userAnswer: val,
-                obtainedMark: 0 // Admin will update this
+                obtainedMark: 0 
             });
         });
 
@@ -607,14 +620,14 @@
                 name: currentUserData.fullName,
                 district: currentUserData.district,
                 submittedAt: Timestamp.now(),
-                answers: formattedAnswers, // Admin needs this array
+                answers: formattedAnswers,
                 totalScore: 0,
                 status: 'pending'
             });
 
             toggleLoading(false);
             switchView('examSuccessPage');
-            preparePrintData(); // Prepare the hidden printable area
+            preparePrintData(); 
         } catch (error) {
             showToast("এরর হয়েছে!", "error");
             toggleLoading(false);
@@ -640,21 +653,16 @@
     }
 
     window.printResult = () => {
-        // Trigger browser print dialog
-        // CSS @media print ensures only #printableArea is shown
         window.print();
     }
     
-    // For users who already submitted and want to download later
     window.downloadMyResult = async () => {
         toggleLoading(true, "লোড হচ্ছে...");
         try {
             const q = query(collection(db, "exam_submissions"), where("uid", "==", auth.currentUser.uid));
             const snap = await getDocs(q);
             if(!snap.empty) {
-                // Get the last submission
                 const data = snap.docs[0].data();
-                // Map back to examSubmissionData format for printer
                 examSubmissionData = data.answers.map(a => ({
                     question: a.questionTitle,
                     answer: a.userAnswer
@@ -669,7 +677,7 @@
         } catch(e) { toggleLoading(false); }
     }
 
-    // --- OTHER AUTH & LICENSE FUNCTIONS (Standard) ---
+    // --- OTHER AUTH & LICENSE FUNCTIONS ---
     window.verifyKey = async () => {
         const key = document.getElementById("licenseKeyInput").value.trim();
         if(!key) return showToast("কি (Key) দিন", "error");
@@ -710,15 +718,13 @@
         toggleLoading(false);
     }
     
-    // Notification & Content Loaders
     window.showNotification = () => {
         const modal = new bootstrap.Modal(document.getElementById('notifModal'));
         if(currentUserData.resultPublished) {
-            // Fetch result logic needed here if extended, keeping simple for now
             document.getElementById("notifContent").innerHTML = `
                 <div class="alert alert-success">
                     <h5>ফলাফল প্রকাশিত হয়েছে!</h5>
-                    <p>এডমিন আপনার খাতা দেখেছেন।</p>
+                    <p>আপনার স্কোর: ${currentUserData.examScore || 'N/A'}</p>
                 </div>`;
         }
         modal.show();
