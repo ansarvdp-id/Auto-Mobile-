@@ -17,32 +17,42 @@
         body { background-color: #f4f6f9; font-family: 'Hind Siliguri', 'Arial', sans-serif; }
         .app-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         
-        /* Top Bar */
         .top-bar { background: #2c3e50; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .profile-img-top { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
         
-        /* Notification Badge */
         .notification-btn { position: relative; cursor: pointer; margin-right: 10px; color: white; font-size: 18px;}
         .notif-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; display: none; }
         
         .hidden { display: none !important; }
         .auth-box { padding: 30px; margin-top: 50px; }
         
-        /* Menu & Slider */
         .slider-wrapper { position: relative; width: 100%; padding-top: 56.25%; overflow: hidden; }
         .slider-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
-        /* Exam Styles */
         .timer-bar { position: sticky; top: 55px; background: #dc3545; color: white; padding: 8px; text-align: center; z-index: 99; font-weight: bold; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .exam-locked-overlay { background: #fff3cd; color: #856404; padding: 20px; text-align: center; border: 1px solid #ffeeba; border-radius: 10px; margin: 20px; }
         .exam-status-overlay { background: #d1e7dd; color: #0f5132; padding: 20px; text-align: center; border: 1px solid #badbcc; border-radius: 10px; margin: 20px; }
         .question-card { border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
 
-        /* Loading Overlay */
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         
         .mcq-option { cursor: pointer; padding: 10px; background: white; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 5px; }
         .mcq-option:hover { background: #e9ecef; }
+
+        /* --- BLANK INPUT STYLE (NEW) --- */
+        .blank-input {
+            border: none;
+            border-bottom: 2px solid #2c3e50;
+            background: #f8f9fa;
+            width: 140px;
+            text-align: center;
+            font-weight: bold;
+            color: #0d6efd;
+            display: inline-block;
+            margin: 0 5px;
+            padding: 0 5px;
+        }
+        .blank-input:focus { outline: none; border-bottom: 2px solid #0d6efd; background: #e7f1ff; }
         
         /* --- FIXED PRINT STYLES --- */
         @media print {
@@ -63,6 +73,7 @@
                 display: flex !important;
                 justify-content: space-between;
                 align-items: center;
+                flex-wrap: nowrap; 
                 border-bottom: 2px solid #000;
                 padding-bottom: 10px;
                 margin-bottom: 20px;
@@ -70,6 +81,7 @@
                 font-weight: bold;
                 width: 100%;
             }
+            .print-header-row span { white-space: nowrap; }
             .print-item { page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
         }
     </style>
@@ -89,12 +101,10 @@
             <span class="fw-bold me-2"><i class="fas fa-edit"></i> মেকানিক e-Exam</span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <!-- Notification Bell -->
             <div class="notification-btn" onclick="showNotification()">
                 <i class="fas fa-bell"></i>
                 <span id="notifBadge" class="notif-badge">!</span>
             </div>
-
             <div class="d-flex flex-column align-items-end" style="line-height: 1.2;">
                 <span id="navUserName" style="font-size: 12px; font-weight: bold;">User</span>
                 <span id="navUserId" style="font-size: 10px; color: #ddd;">ID: ...</span>
@@ -104,9 +114,8 @@
         </div>
     </div>
 
-    <!-- AUTHENTICATION SECTION -->
+    <!-- AUTH SECTION -->
     <div id="authSection" class="no-print">
-        <!-- Login Form -->
         <div id="loginView" class="auth-box">
             <div class="text-center mb-4">
                 <i class="fas fa-user-graduate fa-3x text-primary"></i>
@@ -124,7 +133,6 @@
             <p class="mt-3 text-center">একাউন্ট নেই? <a href="#" onclick="switchView('signup')">সাইন আপ করুন</a></p>
         </div>
 
-        <!-- Signup Form -->
         <div id="signupView" class="auth-box hidden">
             <h3 class="text-center mb-4">নতুন একাউন্ট (সাইন আপ)</h3>
             <div class="mb-2">
@@ -158,7 +166,6 @@
         </div>
     </div>
 
-    <!-- VERIFICATION SECTION -->
     <div id="verificationSection" class="auth-box hidden no-print">
         <div class="text-center">
             <i class="fas fa-lock fa-3x text-warning mb-3"></i>
@@ -170,9 +177,8 @@
         </div>
     </div>
 
-    <!-- HOME DASHBOARD (ONLY EXAM) -->
+    <!-- HOME DASHBOARD -->
     <div id="homeSection" class="hidden no-print">
-        <!-- Slider -->
         <div id="carouselExample" class="carousel slide mb-3" data-bs-ride="carousel">
             <div class="carousel-inner" id="sliderContainer">
                 <div class="carousel-item active">
@@ -183,22 +189,17 @@
             </div>
         </div>
 
-        <!-- Expiry Status -->
         <div class="text-center mb-3">
             <span class="badge bg-info text-dark" id="expiryDisplay"></span>
         </div>
 
-        <!-- EXAM STATUS SECTION -->
         <div id="examSection" class="px-3">
-            
-            <!-- Message when Exam is OFF -->
             <div id="noExamMessage" class="text-center mt-4 hidden">
                 <i class="fas fa-mug-hot fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">বর্তমানে কোনো পরীক্ষা চালু নেই</h5>
                 <p class="small text-muted">এডমিন পরীক্ষা চালু করলে এখানে নোটিফিকেশন দেখতে পাবেন।</p>
             </div>
 
-            <!-- 1. Exam Locked (Ready to take) -->
             <div id="examActiveAlert" class="exam-locked-overlay hidden">
                 <i class="fas fa-clock fa-3x mb-3 text-danger animate__animated animate__pulse animate__infinite"></i>
                 <h4 class="fw-bold">eExam চলছে!</h4>
@@ -209,11 +210,10 @@
                 </button>
             </div>
 
-            <!-- 2. Exam Taken -->
             <div id="examSubmittedAlert" class="exam-status-overlay hidden">
                 <i class="fas fa-clipboard-check fa-3x mb-3 text-success"></i>
                 <h5 class="fw-bold">পরীক্ষা সম্পন্ন হয়েছে!</h5>
-                <p class="small">আপনার উত্তরপত্র জমা হয়েছে। এডমিন ফলাফল প্রকাশ করা পর্যন্ত অপেক্ষা করুন।</p>
+                <p class="small">আপনার উত্তরপত্র জমা হয়েছে। ফলাফল প্রকাশ পর্যন্ত অপেক্ষা করুন।</p>
                 <button onclick="downloadMyResult()" class="btn btn-sm btn-outline-success">
                     <i class="fas fa-download"></i> উত্তরপত্র ডাউনলোড
                 </button>
@@ -237,7 +237,6 @@
         </div>
     </div>
 
-    <!-- EXAM SUCCESS PAGE -->
     <div id="examSuccessPage" class="hidden auth-box text-center no-print">
         <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
         <h4>উত্তরপত্র জমা হয়েছে!</h4>
@@ -250,7 +249,6 @@
         </button>
     </div>
 
-    <!-- Notification Modal -->
     <div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -269,14 +267,13 @@
 
 </div>
 
-<!-- PRINTABLE AREA (UPDATED LAYOUT) -->
+<!-- PRINTABLE AREA -->
 <div id="printableArea" class="hidden">
     <div class="text-center pb-2 mb-3">
         <h2>অটো মেকানিক ই-এক্সাম</h2>
         <p class="m-0">ফাইনাল পরীক্ষা - উত্তরপত্র</p>
     </div>
     
-    <!-- তথ্য এক লাইনে (Row) দেখানোর জন্য -->
     <div class="print-header-row">
         <span>নাম: <span id="printName"></span></span>
         <span>আইডি: <span id="printId"></span></span>
@@ -284,20 +281,16 @@
         <span>তারিখ: <span id="printDate"></span></span>
     </div>
 
-    <div id="printContent">
-        <!-- Questions and Answers will appear here -->
-    </div>
+    <div id="printContent"></div>
 </div>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-<!-- Firebase SDK -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, Timestamp, orderBy, limit, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBEfs_yi_U5AObahTTLQGK5Sj4k1wSBXb0", 
@@ -315,9 +308,8 @@
     let currentUserData = null;
     let examTimerInterval;
     let examSubmissionData = [];
-    let currentBatchId = "batch_default"; // Default batch
+    let currentBatchId = "batch_default"; 
 
-    // --- HELPER FUNCTIONS ---
     window.showToast = (msg, type="info") => {
         let bg = type === "error" ? "#dc3545" : "#198754";
         Toastify({ text: msg, duration: 3000, style: { background: bg }, gravity: "bottom" }).showToast();
@@ -346,7 +338,6 @@
         }
     }
 
-    // --- CLOUDINARY UPLOAD ---
     async function uploadToCloudinary(file) {
         if(file.size > 2097152) throw new Error("ইমেজ সাইজ ২MB এর কম হতে হবে");
         const formData = new FormData();
@@ -360,7 +351,6 @@
         } catch (error) { throw new Error("ইমেজ আপলোড ব্যর্থ হয়েছে"); }
     }
 
-    // --- LOAD DISTRICTS ---
     async function loadSignupDistricts() {
         const select = document.getElementById("regDistrict");
         select.innerHTML = '<option value="">লোড হচ্ছে...</option>';
@@ -389,7 +379,6 @@
         }
     }
 
-    // --- AUTH ---
     window.handleSignup = async () => {
         const name = document.getElementById("regName").value;
         const district = document.getElementById("regDistrict").value;
@@ -479,7 +468,6 @@
         } else { switchView('login'); toggleLoading(false); }
     });
 
-    // --- EXAM LOGIC UPDATED FOR BATCHES ---
     async function checkExamConfigAndStatus() {
         try {
             const settingsDoc = await getDoc(doc(db, "app_settings", "exam_config"));
@@ -487,7 +475,6 @@
             const submittedAlert = document.getElementById("examSubmittedAlert");
             const noExamMsg = document.getElementById("noExamMessage");
 
-            // Reset UI
             activeAlert.classList.add("hidden");
             submittedAlert.classList.add("hidden");
             noExamMsg.classList.add("hidden");
@@ -496,10 +483,8 @@
                 const config = settingsDoc.data();
                 window.examConfigData = config;
                 
-                // Set Current Batch ID
-                currentBatchId = config.batchId || "batch_1"; 
+                currentBatchId = config.batchId || "batch_default"; 
 
-                // Check submission ONLY for this batch
                 const subQuery = query(
                     collection(db, "exam_submissions"), 
                     where("uid", "==", auth.currentUser.uid),
@@ -523,6 +508,7 @@
         if(confirm("আপনি কি পরীক্ষা শুরু করতে প্রস্তুত?")) loadExamQuestions();
     }
 
+    // --- UPDATED QUESTION LOADER (SUPPORTS FILL BLANK) ---
     async function loadExamQuestions() {
         toggleLoading(true, "প্রশ্নপত্র লোড হচ্ছে...");
         switchView("examPage");
@@ -531,11 +517,14 @@
         examSubmissionData = [];
 
         try {
-            const qQuery = query(collection(db, "exam_questions"));
+            const qQuery = query(
+                collection(db, "exam_questions"),
+                where("batchId", "==", currentBatchId) 
+            );
             const querySnapshot = await getDocs(qQuery);
 
             if(querySnapshot.empty) {
-                alert("প্রশ্ন পাওয়া যায়নি।");
+                alert("এই পরীক্ষার প্রশ্ন পাওয়া যায়নি (Batch ID Mismatch)। এডমিনকে জানান।");
                 switchView('home');
                 return;
             }
@@ -562,24 +551,38 @@
 
                 let html = `<div class="question-card">
                     ${imageHtml}
-                    <h6 class="fw-bold">${index}. ${q.question}</h6>`;
+                    <h6 class="fw-bold"><span class="badge bg-dark me-2">${index}</span>`;
 
-                if(q.type === 'mcq' || q.type === 'truefalse') {
-                    if(q.options && q.options.length > 0) {
-                        q.options.forEach((opt, idx) => {
-                            const uniqueId = `${qId}_${idx}`; 
-                            html += `
-                                <div class="form-check mt-2 mcq-option" onclick="document.getElementById('${uniqueId}').checked=true">
-                                    <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${uniqueId}">
-                                    <label class="form-check-label w-100" style="cursor:pointer;" for="${uniqueId}">${opt}</label>
-                                </div>`;
-                        });
-                    } else {
-                        html += `<p class="text-danger small">কোন অপশন সেট করা নেই</p>`;
-                    }
+                // --- LOGIC FOR DIFFERENT QUESTION TYPES ---
+                
+                if(q.type === 'fillblank') {
+                    // Replace [answer] with input field
+                    const formattedQuestion = q.question.replace(/\[(.*?)\]/g, (match, p1) => {
+                        return `<input type="text" class="blank-input" name="${qId}" placeholder="?" autocomplete="off">`;
+                    });
+                    html += `${formattedQuestion}</h6>`;
+                    
                 } else {
-                    html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="উত্তর..."></textarea>`;
+                    html += `${q.question}</h6>`; // Normal question title
+                    
+                    if(q.type === 'mcq' || q.type === 'truefalse') {
+                        if(q.options && q.options.length > 0) {
+                            q.options.forEach((opt, idx) => {
+                                const uniqueId = `${qId}_${idx}`; 
+                                html += `
+                                    <div class="form-check mt-2 mcq-option" onclick="document.getElementById('${uniqueId}').checked=true">
+                                        <input class="form-check-input" type="radio" name="${qId}" value="${opt}" id="${uniqueId}">
+                                        <label class="form-check-label w-100" style="cursor:pointer;" for="${uniqueId}">${opt}</label>
+                                    </div>`;
+                            });
+                        } else {
+                            html += `<p class="text-danger small">কোন অপশন সেট করা নেই</p>`;
+                        }
+                    } else if (q.type === 'short') {
+                        html += `<textarea class="form-control mt-2" name="${qId}" rows="2" placeholder="উত্তর..."></textarea>`;
+                    }
                 }
+
                 html += `</div>`;
                 container.innerHTML += html;
                 index++;
@@ -606,7 +609,6 @@
         }, 1000);
     }
 
-    // --- SUBMIT EXAM WITH BATCH ID ---
     window.submitExam = async (isAuto) => {
         clearInterval(examTimerInterval);
         toggleLoading(true, "জমা হচ্ছে...");
@@ -616,12 +618,17 @@
         let formattedAnswers = [];
         
         examSubmissionData.forEach(item => {
-            let val = formData.get(item.id) || (item.type === 'short' ? "উত্তর দেওয়া হয়নি" : "Selected None");
+            let val = formData.get(item.id);
+            
+            if (!val) {
+                 val = (item.type === 'short' || item.type === 'fillblank') ? "উত্তর দেওয়া হয়নি" : "Selected None";
+            }
+            
             item.answer = val;
             
             formattedAnswers.push({
                 questionId: item.id,
-                questionTitle: item.question,
+                questionTitle: item.question, // Original question with brackets preserved
                 userAnswer: val,
                 obtainedMark: 0 
             });
@@ -634,7 +641,7 @@
                 name: currentUserData.fullName,
                 district: currentUserData.district,
                 submittedAt: Timestamp.now(),
-                batchId: currentBatchId, // Added Batch ID
+                batchId: currentBatchId, 
                 answers: formattedAnswers,
                 totalScore: 0,
                 status: 'pending'
@@ -649,20 +656,22 @@
         }
     }
 
-    // --- PRINT / PDF LOGIC UPDATED ---
     function preparePrintData() {
         document.getElementById("printName").innerText = currentUserData.fullName;
         document.getElementById("printId").innerText = currentUserData.serialId;
-        document.getElementById("printDist").innerText = currentUserData.district || "N/A"; // Added District
+        document.getElementById("printDist").innerText = currentUserData.district || "N/A";
         document.getElementById("printDate").innerText = new Date().toLocaleDateString('bn-BD');
         
         let html = "";
         examSubmissionData.forEach((item, i) => {
             let imgHTML = item.image ? `<br><img src="${item.image}" style="max-height: 100px; margin: 5px 0;">` : '';
             
+            // Format question text for display in print (remove brackets mostly)
+            let displayQ = item.question.replace(/\[(.*?)\]/g, "_______");
+
             html += `
                 <div class="print-item">
-                    <p style="font-weight: bold; margin:0;">${i+1}. ${item.question}</p>
+                    <p style="font-weight: bold; margin:0;">${i+1}. ${displayQ}</p>
                     ${imgHTML}
                     <p style="margin:5px 0 0 0; color: #2980b9;">উত্তর: <strong>${item.answer}</strong></p>
                 </div>
@@ -676,11 +685,9 @@
         window.print();
     }
     
-    // Download result specific to Current Batch or Latest
     window.downloadMyResult = async () => {
         toggleLoading(true, "লোড হচ্ছে...");
         try {
-            // First try to get current batch result
             let q = query(
                 collection(db, "exam_submissions"), 
                 where("uid", "==", auth.currentUser.uid),
@@ -688,7 +695,6 @@
             );
             let snap = await getDocs(q);
 
-            // If no current batch result, get the very last one
             if(snap.empty) {
                 q = query(
                     collection(db, "exam_submissions"), 
@@ -717,7 +723,6 @@
         } catch(e) { toggleLoading(false); console.error(e); }
     }
 
-    // --- LICENSE & KEY ---
     window.verifyKey = async () => {
         const key = document.getElementById("licenseKeyInput").value.trim();
         if(!key) return showToast("কি (Key) দিন", "error");
